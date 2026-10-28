@@ -26,7 +26,7 @@ const CALLER_PROFILES = {
   garv: {
     id: "garv",
     name: "Garv",
-    password: process.env.NEXT_PUBLIC_GARV_PASS || "garv123",
+    password: process.env.NEXT_GARV_PASS || "garv123",
     sheetApiUrl: process.env.NEXT_PUBLIC_GARV_SHEET_URL,
     formUrl: process.env.NEXT_PUBLIC_GARV_FORM_URL || "https://docs.google.com/forms",
   }
