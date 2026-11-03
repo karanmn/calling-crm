@@ -4,7 +4,7 @@ import {
   Phone, MessageSquare, Lock, LogOut, RefreshCw, 
   X, BellRing, PlusCircle, CheckCircle2, ArrowRight,
   TrendingUp, Award, IndianRupee, CalendarCheck, Clock,
-  Calendar, Edit3, History, Maximize2, Minimize2
+  Calendar, Edit3, History, Maximize2, Minimize2, Search, Contact
 } from "lucide-react";
 
 const FOLLOWUP_FLOW = [
@@ -51,6 +51,7 @@ export default function KhushaliCallerCRM() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("today");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Popups & Modals State
   const [smartPopupLead, setSmartPopupLead] = useState(null);
@@ -375,7 +376,7 @@ export default function KhushaliCallerCRM() {
     }
   };
 
-  // IN-APP NEW CUSTOMER SUBMIT (CRASH-PROOF)
+  // IN-APP NEW CUSTOMER SUBMIT (CRASH-PROOF & AUTO GOOGLE CONTACT SYNC)
   const handleAddNewCustomer = async (e) => {
     e.preventDefault();
     if (!loggedInCaller) return;
@@ -424,7 +425,7 @@ export default function KhushaliCallerCRM() {
     }
   };
 
-  // IN-APP EDIT CUSTOMER INFO (CRASH-PROOF: STRING-SAFE)
+  // IN-APP EDIT CUSTOMER INFO (CRASH-PROOF)
   const handleOpenEditCustomer = (lead) => {
     setEditLeadForm({
       rowIndex: lead.rowIndex,
@@ -503,7 +504,7 @@ export default function KhushaliCallerCRM() {
     }
   };
 
-  // FILTERED LEADS FOR CURRENT TAB
+  // FILTERED LEADS FOR CURRENT TAB & SEARCH QUERY
   const filteredLeads = useMemo(() => {
     return leads.filter((l) => {
       const status = l["Call_Status"] || "New";
@@ -511,24 +512,34 @@ export default function KhushaliCallerCRM() {
       const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
       const lastCall = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
 
+      let matchesTab = true;
       if (activeFilter === "today") {
-        return !isClosed && (!nextDate || nextDate === todayDate);
+        matchesTab = !isClosed && (!nextDate || nextDate === todayDate);
+      } else if (activeFilter === "called_today") {
+        matchesTab = lastCall === todayDate;
+      } else if (activeFilter === "orders_today") {
+        matchesTab = lastCall === todayDate && status === "Order Confirmed";
+      } else if (activeFilter === "overdue") {
+        matchesTab = !isClosed && nextDate && nextDate < todayDate;
+      } else if (activeFilter === "upcoming") {
+        matchesTab = !isClosed && nextDate && nextDate > todayDate;
       }
-      if (activeFilter === "called_today") {
-        return lastCall === todayDate;
+
+      if (!matchesTab) return false;
+
+      // Smart Search Query Logic
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const name = String(l["Name"] || "").toLowerCase();
+        const num = String(l["Number"] || l["Contact Number"] || "").toLowerCase();
+        const city = String(l["City"] || "").toLowerCase();
+        const chem = String(l["आपको कौन कौनसे chemical चाहिए?"] || "").toLowerCase();
+        return name.includes(q) || num.includes(q) || city.includes(q) || chem.includes(q);
       }
-      if (activeFilter === "orders_today") {
-        return lastCall === todayDate && status === "Order Confirmed";
-      }
-      if (activeFilter === "overdue") {
-        return !isClosed && nextDate && nextDate < todayDate;
-      }
-      if (activeFilter === "upcoming") {
-        return !isClosed && nextDate && nextDate > todayDate;
-      }
+
       return true;
     });
-  }, [leads, activeFilter, todayDate]);
+  }, [leads, activeFilter, todayDate, searchQuery]);
 
   if (!loggedInCaller) {
     return (
@@ -627,7 +638,7 @@ export default function KhushaliCallerCRM() {
               {loggedInCaller.whatsappLine}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">10 Lakh Target Engine • Automated Cadence & Schedule Reminders</p>
+          <p className="text-xs text-slate-400 mt-1">10 Lakh Target Engine • Auto Google Contacts 'CX' Sync Enabled</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
@@ -738,6 +749,34 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
+      {/* 🔍 TOP LIVE SEARCH BAR */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-lg">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+          <input
+            type="text"
+            placeholder="Search karein: Customer Name, Mobile Number, City ya Chemicals..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-3 text-slate-400 hover:text-white"
+              title="Clear search"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <div className="text-xs text-emerald-400 font-semibold px-2 whitespace-nowrap">
+            Showing {filteredLeads.length} matching leads
+          </div>
+        )}
+      </div>
+
       {/* FILTER TABS WITH DYNAMIC LIVE COUNTS */}
       <div className="flex flex-wrap gap-2">
         {[
@@ -785,7 +824,7 @@ export default function KhushaliCallerCRM() {
               {filteredLeads.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-10 text-center text-slate-500 text-xs">
-                    Is filter me koi lead nahi hai.
+                    {searchQuery ? `"${searchQuery}" ke liye koi result nahi mila.` : "Is filter me koi lead nahi hai."}
                   </td>
                 </tr>
               ) : (
@@ -891,14 +930,13 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
-      {/* 🔔 SMART CALL POPUP (WITH SNOOZE-TO-LAST & SLEEK MINIMIZE BAR) */}
+      {/* 🔔 SMART CALL POPUP (SNOOZE TO LAST & MINIMIZE) */}
       {showSmartPopup && smartPopupLead && !activeLeadModal && !historyModalLead && (
         isPopupMinimized ? (
-          // MINIMIZED FLOATING BAR
           <div
             onClick={() => setIsPopupMinimized(false)}
             className="fixed bottom-5 right-5 bg-slate-900/95 border-2 border-emerald-500/80 rounded-2xl px-4 py-3 shadow-2xl z-40 flex items-center gap-3 cursor-pointer hover:bg-slate-800 hover:border-emerald-400 transition animate-pulse"
-            title="Click karein expand karne ke liye"
+            title="Click to expand"
           >
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
             <div className="flex items-center gap-2">
@@ -934,7 +972,6 @@ export default function KhushaliCallerCRM() {
             </button>
           </div>
         ) : (
-          // EXPANDED POPUP WINDOW
           <div className="fixed bottom-5 right-5 left-5 md:left-auto md:w-[440px] bg-slate-900 border-2 border-emerald-500 rounded-3xl p-5 shadow-2xl z-40 animate-fade-in">
             <div className="flex justify-between items-center mb-3">
               <span className="bg-emerald-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
@@ -1200,9 +1237,11 @@ export default function KhushaliCallerCRM() {
             </button>
 
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Direct Entry</span>
-              <h3 className="text-xl font-black text-white">Naya Customer Jodein</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Yahan direct save karein, Google Form ki zaroorat nahi hai.</p>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                <Contact className="w-3.5 h-3.5" /> Direct Entry & Google Contacts
+              </span>
+              <h3 className="text-xl font-black text-white mt-0.5">Naya Customer Jodein</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Google Contacts me automatically <b>'CX' suffix</b> ke sath save hoga.</p>
             </div>
 
             <form onSubmit={handleAddNewCustomer} className="space-y-3">
@@ -1280,14 +1319,14 @@ export default function KhushaliCallerCRM() {
                 disabled={saving}
                 className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/20"
               >
-                {saving ? "Saving to Sheet..." : "Customer Add Karein"}
+                {saving ? "Saving & Syncing to Contacts..." : "Customer Add Karein"}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* ✏️ IN-APP DIRECT EDIT CUSTOMER INFO MODAL (CRASH-PROOF) */}
+      {/* ✏️ IN-APP DIRECT EDIT CUSTOMER INFO MODAL */}
       {editCustomerModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl space-y-4">
@@ -1298,6 +1337,7 @@ export default function KhushaliCallerCRM() {
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Edit Mode</span>
               <h3 className="text-xl font-black text-white">Customer Details Edit Karein</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Updated details sheet aur Google Contacts dono me sync ho jayegi.</p>
             </div>
 
             <form onSubmit={handleSaveCustomerEdit} className="space-y-3">
@@ -1359,7 +1399,7 @@ export default function KhushaliCallerCRM() {
                 disabled={saving}
                 className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-amber-500/20"
               >
-                {saving ? "Updating Sheet..." : "Save Updated Details"}
+                {saving ? "Updating Sheet & Contacts..." : "Save Updated Details"}
               </button>
             </form>
           </div>
