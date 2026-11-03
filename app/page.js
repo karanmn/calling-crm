@@ -169,7 +169,7 @@ export default function KhushaliCallerCRM() {
     return { callsCount, ordersCount, revenue, revProgress };
   }, [leads, todayDate, loggedInCaller]);
 
-  // ALL TABS LIVE COUNTS
+  // ALL TABS LIVE BADGE COUNTS
   const tabCounts = useMemo(() => {
     let today = 0;
     let calledToday = 0;
@@ -198,7 +198,7 @@ export default function KhushaliCallerCRM() {
     return { today, calledToday, ordersToday, overdue, upcoming, all: leads.length };
   }, [leads, todayDate]);
 
-  // LIVE TIME-BASED CALL POPUP ALARM + AUTO TRIGGER
+  // TIME-BASED CALL POPUP ALARM + CHECKER
   useEffect(() => {
     if (!loggedInCaller || leads.length === 0) return;
 
@@ -206,7 +206,7 @@ export default function KhushaliCallerCRM() {
       const now = new Date();
       const currentTimeStr = now.toTimeString().slice(0, 5); // HH:MM
 
-      // 1. Time-matched scheduled call alert
+      // 1. Exact Scheduled Time Match
       const exactTimeLead = leads.find((l) => {
         const status = l["Call_Status"] || "New";
         if (status === "Order Confirmed" || status === "Not Interested") return false;
@@ -241,7 +241,7 @@ export default function KhushaliCallerCRM() {
     return () => clearInterval(timer);
   }, [leads, loggedInCaller, todayDate, showSmartPopup]);
 
-  // SNOOZE ACTION: PUSH TO LAST & MINIMIZE WINDOW
+  // SNOOZE ACTION: PUSH TO LAST ROW & MINIMIZE POPUP
   const handleSnooze = () => {
     if (!smartPopupLead) return;
     setLeads((prev) => {
@@ -251,37 +251,38 @@ export default function KhushaliCallerCRM() {
     setIsPopupMinimized(true);
   };
 
-  const calculateNextFollowUp = (lead) => {
+  // 🔥 CADENCE LOGIC: SAME DAY MULTIPLE CALLS PAR STAGE ADVANCE NAHI HOGA
+  const calculateNextFollowUp = (lead, forceSameDay = false) => {
     const currentStage = lead["Current_Stage"] || "Day 1";
-    const baseDateStr = lead["Day_1_Date"] || lead["Timestamp"] || todayDate;
-    const baseDate = new Date(baseDateStr);
-
+    const lastCallDate = lead["Last_Call_Date"] ? String(lead["Last_Call_Date"]).split("T")[0] : "";
     const idx = FOLLOWUP_FLOW.findIndex((f) => f.stage === currentStage);
     const currentObj = idx !== -1 ? FOLLOWUP_FLOW[idx] : FOLLOWUP_FLOW[0];
 
+    // Check if customer was already spoken to today
+    const isSameDayRepeat = forceSameDay || (lastCallDate === todayDate);
+
+    if (isSameDayRepeat) {
+      return {
+        nextStage: currentStage, // Stage change nahi hoga (Day 1 hi rahega)
+        nextDate: lead["Next_Call_Date"] ? String(lead["Next_Call_Date"]).split("T")[0] : todayDate,
+        noteCol: currentObj.noteCol,
+        isSameDayRepeat: true
+      };
+    }
+
     if (idx === FOLLOWUP_FLOW.length - 1) {
-      return { nextStage: "Completed", nextDate: "CLOSED", noteCol: currentObj.noteCol };
+      return { nextStage: "Completed", nextDate: "CLOSED", noteCol: currentObj.noteCol, isSameDayRepeat: false };
     }
 
     const nextObj = idx !== -1 ? FOLLOWUP_FLOW[idx + 1] : FOLLOWUP_FLOW[1];
-    const targetDate = new Date(baseDate);
-    targetDate.setDate(targetDate.getDate() + (nextObj.days - 1));
-
-    const todayObj = new Date(todayDate);
-    if (targetDate <= todayObj) {
-      const diffFromPrev = nextObj.days - currentObj.days;
-      todayObj.setDate(todayObj.getDate() + diffFromPrev);
-      return {
-        nextStage: nextObj.stage,
-        nextDate: todayObj.toISOString().split("T")[0],
-        noteCol: currentObj.noteCol,
-      };
-    }
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + (nextObj.days - currentObj.days));
 
     return {
       nextStage: nextObj.stage,
       nextDate: targetDate.toISOString().split("T")[0],
-      noteCol: currentObj.noteCol,
+      noteCol: nextObj.noteCol,
+      isSameDayRepeat: false
     };
   };
 
@@ -302,7 +303,8 @@ export default function KhushaliCallerCRM() {
 
     try {
       const currentStage = activeLeadModal["Current_Stage"] || "Day 1";
-      const stepInfo = calculateNextFollowUp(activeLeadModal);
+      const isSameDayForce = callStatusInput === "Same Day Follow-up";
+      const stepInfo = calculateNextFollowUp(activeLeadModal, isSameDayForce);
 
       let nextStageVal = stepInfo.nextStage;
       let nextDateVal = stepInfo.nextDate;
@@ -311,6 +313,8 @@ export default function KhushaliCallerCRM() {
       if (customDateTimeEnabled && customDateInput) {
         nextDateVal = customDateInput;
         nextTimeVal = customTimeInput || "";
+      } else if (callStatusInput === "Same Day Follow-up" || stepInfo.isSameDayRepeat) {
+        nextStageVal = currentStage;
       } else if (callStatusInput === "Busy / Call Tomorrow" || callStatusInput === "Ringing / Not Picked") {
         nextStageVal = currentStage;
         const tmw = new Date();
@@ -321,10 +325,18 @@ export default function KhushaliCallerCRM() {
         nextDateVal = "CLOSED";
       }
 
+      const nowTime = new Date().toTimeString().slice(0, 5);
       const finalAmt = callStatusInput === "Order Confirmed" ? (parseFloat(orderAmountInput) || 0) : 0;
-      const finalRemark = callStatusInput === "Order Confirmed" 
-        ? `[ORDER: ₹${finalAmt}] ${orderDetailsInput} | Note: ${callNoteInput}`
-        : (customTimeInput ? `[Scheduled: ${nextDateVal} @ ${nextTimeVal}] ${callNoteInput}` : callNoteInput);
+      
+      const noteTimestamp = `[${todayDate} ${nowTime}]`;
+      let finalRemark = "";
+      if (callStatusInput === "Order Confirmed") {
+        finalRemark = `${noteTimestamp} [ORDER: ₹${finalAmt}] ${orderDetailsInput} | Note: ${callNoteInput}`;
+      } else if (customTimeInput) {
+        finalRemark = `${noteTimestamp} [Scheduled: ${nextDateVal} @ ${nextTimeVal}] ${callNoteInput}`;
+      } else {
+        finalRemark = `${noteTimestamp} ${callNoteInput}`;
+      }
 
       const payload = {
         action: "update_call",
@@ -357,7 +369,9 @@ export default function KhushaliCallerCRM() {
                 Last_Call_Date: todayDate,
                 Call_Status: callStatusInput,
                 Order_Amount: finalAmt,
-                [stepInfo.noteCol]: `[${todayDate}${nextTimeVal ? " " + nextTimeVal : ""}] ${finalRemark}`,
+                [stepInfo.noteCol]: item[stepInfo.noteCol] 
+                  ? `${item[stepInfo.noteCol]} | ${finalRemark}` 
+                  : finalRemark,
               }
             : item
         )
@@ -376,7 +390,7 @@ export default function KhushaliCallerCRM() {
     }
   };
 
-  // IN-APP NEW CUSTOMER SUBMIT (CRASH-PROOF & AUTO GOOGLE CONTACT SYNC)
+  // IN-APP NEW CUSTOMER SUBMIT (CRASH-PROOF & AUTO GOOGLE CONTACTS CX SYNC)
   const handleAddNewCustomer = async (e) => {
     e.preventDefault();
     if (!loggedInCaller) return;
@@ -425,7 +439,7 @@ export default function KhushaliCallerCRM() {
     }
   };
 
-  // IN-APP EDIT CUSTOMER INFO (CRASH-PROOF)
+  // IN-APP EDIT CUSTOMER INFO (CRASH-PROOF STRING HANDLING)
   const handleOpenEditCustomer = (lead) => {
     setEditLeadForm({
       rowIndex: lead.rowIndex,
@@ -527,7 +541,7 @@ export default function KhushaliCallerCRM() {
 
       if (!matchesTab) return false;
 
-      // Smart Search Query Logic
+      // Smart Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const name = String(l["Name"] || "").toLowerCase();
@@ -638,7 +652,7 @@ export default function KhushaliCallerCRM() {
               {loggedInCaller.whatsappLine}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">10 Lakh Target Engine • Auto Google Contacts 'CX' Sync Enabled</p>
+          <p className="text-xs text-slate-400 mt-1">10 Lakh Target Engine • Auto Google Contacts 'CX' Sync</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
@@ -749,7 +763,7 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
-      {/* 🔍 TOP LIVE SEARCH BAR */}
+      {/* 🔍 REAL-TIME SEARCH BAR */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-lg">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -812,7 +826,7 @@ export default function KhushaliCallerCRM() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-slate-900 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider">
-                <th className="p-3.5">Customer & Contact (Click Name for Remarks History)</th>
+                <th className="p-3.5">Customer & Contact (Click Name for History)</th>
                 <th className="p-3.5">City & Requirement</th>
                 <th className="p-3.5">Status / Stage</th>
                 <th className="p-3.5">Last Call</th>
@@ -869,6 +883,7 @@ export default function KhushaliCallerCRM() {
                             status === "Order Confirmed" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
                             status === "Busy / Call Tomorrow" ? "bg-amber-500/20 text-amber-400" :
                             status === "Ringing / Not Picked" ? "bg-purple-500/20 text-purple-400" :
+                            status === "Same Day Follow-up" ? "bg-sky-500/20 text-sky-400" :
                             "bg-slate-800 text-slate-300"
                           }`}>
                             {status}
@@ -930,13 +945,14 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
-      {/* 🔔 SMART CALL POPUP (SNOOZE TO LAST & MINIMIZE) */}
+      {/* 🔔 SMART CALL POPUP (SNOOZE TO LAST & SLEEK MINIMIZE BAR) */}
       {showSmartPopup && smartPopupLead && !activeLeadModal && !historyModalLead && (
         isPopupMinimized ? (
+          // MINIMIZED FLOATING BAR
           <div
             onClick={() => setIsPopupMinimized(false)}
             className="fixed bottom-5 right-5 bg-slate-900/95 border-2 border-emerald-500/80 rounded-2xl px-4 py-3 shadow-2xl z-40 flex items-center gap-3 cursor-pointer hover:bg-slate-800 hover:border-emerald-400 transition animate-pulse"
-            title="Click to expand"
+            title="Click to expand popup"
           >
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
             <div className="flex items-center gap-2">
@@ -972,6 +988,7 @@ export default function KhushaliCallerCRM() {
             </button>
           </div>
         ) : (
+          // EXPANDED POPUP WINDOW
           <div className="fixed bottom-5 right-5 left-5 md:left-auto md:w-[440px] bg-slate-900 border-2 border-emerald-500 rounded-3xl p-5 shadow-2xl z-40 animate-fade-in">
             <div className="flex justify-between items-center mb-3">
               <span className="bg-emerald-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
@@ -1107,7 +1124,7 @@ export default function KhushaliCallerCRM() {
         </div>
       )}
 
-      {/* ⏰ UPDATE CALL MODAL WITH OPTIONAL EXACT DATE & TIME */}
+      {/* ⏰ UPDATE CALL MODAL WITH STAGE PROTECTION & TIME PICKER */}
       {activeLeadModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -1130,6 +1147,7 @@ export default function KhushaliCallerCRM() {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-medium"
                 >
                   <option value="Interested">Connected - Interested (Cadence Flow)</option>
+                  <option value="Same Day Follow-up">Connected - Same Day Follow-up (Keep Current Stage)</option>
                   <option value="Busy / Call Tomorrow">Connected - Busy / Call Tomorrow</option>
                   <option value="Ringing / Not Picked">Ringing / Phone Nahi Uthaya</option>
                   <option value="Order Confirmed">🎉 Order Confirmed (Booking)</option>
@@ -1211,7 +1229,7 @@ export default function KhushaliCallerCRM() {
                   rows={3}
                   value={callNoteInput}
                   onChange={(e) => setCallNoteInput(e.target.value)}
-                  placeholder="Customer ne kya kaha? Sample manga ya rate issue tha..."
+                  placeholder="Customer ne kya kaha? Rate issue tha ya sample manga..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
