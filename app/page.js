@@ -4,7 +4,7 @@ import {
   Phone, MessageSquare, Lock, LogOut, RefreshCw, 
   X, BellRing, PlusCircle, CheckCircle2, ArrowRight,
   TrendingUp, Award, IndianRupee, CalendarCheck, Clock,
-  Calendar, Edit3, History, Save, AlertCircle, User
+  Calendar, Edit3, History, Maximize2, Minimize2
 } from "lucide-react";
 
 const FOLLOWUP_FLOW = [
@@ -52,9 +52,10 @@ export default function KhushaliCallerCRM() {
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("today");
 
-  // Popups & Modals
+  // Popups & Modals State
   const [smartPopupLead, setSmartPopupLead] = useState(null);
   const [showSmartPopup, setShowSmartPopup] = useState(false);
+  const [isPopupMinimized, setIsPopupMinimized] = useState(false);
   const [activeLeadModal, setActiveLeadModal] = useState(null);
   const [historyModalLead, setHistoryModalLead] = useState(null);
   const [newCustomerModalOpen, setNewCustomerModalOpen] = useState(false);
@@ -117,6 +118,7 @@ export default function KhushaliCallerCRM() {
     setLeads([]);
     setSmartPopupLead(null);
     setShowSmartPopup(false);
+    setIsPopupMinimized(false);
     sessionStorage.removeItem("khushali_active_caller");
   };
 
@@ -166,7 +168,7 @@ export default function KhushaliCallerCRM() {
     return { callsCount, ordersCount, revenue, revProgress };
   }, [leads, todayDate, loggedInCaller]);
 
-  // ALL TAB COUNTS
+  // ALL TABS LIVE COUNTS
   const tabCounts = useMemo(() => {
     let today = 0;
     let calledToday = 0;
@@ -195,7 +197,7 @@ export default function KhushaliCallerCRM() {
     return { today, calledToday, ordersToday, overdue, upcoming, all: leads.length };
   }, [leads, todayDate]);
 
-  // LIVE TIME-BASED CALL SCHEDULER POPUP & NORMAL URGENT CHECKER
+  // LIVE TIME-BASED CALL POPUP ALARM + AUTO TRIGGER
   useEffect(() => {
     if (!loggedInCaller || leads.length === 0) return;
 
@@ -203,7 +205,7 @@ export default function KhushaliCallerCRM() {
       const now = new Date();
       const currentTimeStr = now.toTimeString().slice(0, 5); // HH:MM
 
-      // 1. Time-matched scheduled call
+      // 1. Time-matched scheduled call alert
       const exactTimeLead = leads.find((l) => {
         const status = l["Call_Status"] || "New";
         if (status === "Order Confirmed" || status === "Not Interested") return false;
@@ -215,6 +217,7 @@ export default function KhushaliCallerCRM() {
       if (exactTimeLead) {
         setSmartPopupLead(exactTimeLead);
         setShowSmartPopup(true);
+        setIsPopupMinimized(false);
         return;
       }
 
@@ -233,19 +236,18 @@ export default function KhushaliCallerCRM() {
     };
 
     checkScheduledAndUrgentCalls();
-    const timer = setInterval(checkScheduledAndUrgentCalls, 15000); // Check every 15 seconds
+    const timer = setInterval(checkScheduledAndUrgentCalls, 15000);
     return () => clearInterval(timer);
   }, [leads, loggedInCaller, todayDate, showSmartPopup]);
 
-  // SNOOZE FEATURE: PUSH NUMBER TO LAST IN LIST
+  // SNOOZE ACTION: PUSH TO LAST & MINIMIZE WINDOW
   const handleSnooze = () => {
     if (!smartPopupLead) return;
     setLeads((prev) => {
       const withoutCurrent = prev.filter((l) => l.rowIndex !== smartPopupLead.rowIndex);
       return [...withoutCurrent, smartPopupLead];
     });
-    setShowSmartPopup(false);
-    setSmartPopupLead(null);
+    setIsPopupMinimized(true);
   };
 
   const calculateNextFollowUp = (lead) => {
@@ -297,45 +299,45 @@ export default function KhushaliCallerCRM() {
     if (!activeLeadModal || !loggedInCaller) return;
     setSaving(true);
 
-    const currentStage = activeLeadModal["Current_Stage"] || "Day 1";
-    const stepInfo = calculateNextFollowUp(activeLeadModal);
-
-    let nextStageVal = stepInfo.nextStage;
-    let nextDateVal = stepInfo.nextDate;
-    let nextTimeVal = "";
-
-    if (customDateTimeEnabled && customDateInput) {
-      nextDateVal = customDateInput;
-      nextTimeVal = customTimeInput || "";
-    } else if (callStatusInput === "Busy / Call Tomorrow" || callStatusInput === "Ringing / Not Picked") {
-      nextStageVal = currentStage;
-      const tmw = new Date();
-      tmw.setDate(tmw.getDate() + 1);
-      nextDateVal = tmw.toISOString().split("T")[0];
-    } else if (callStatusInput === "Order Confirmed" || callStatusInput === "Not Interested") {
-      nextStageVal = "CLOSED";
-      nextDateVal = "CLOSED";
-    }
-
-    const finalAmt = callStatusInput === "Order Confirmed" ? (parseFloat(orderAmountInput) || 0) : 0;
-    const finalRemark = callStatusInput === "Order Confirmed" 
-      ? `[ORDER: ₹${finalAmt}] ${orderDetailsInput} | Note: ${callNoteInput}`
-      : (customTimeInput ? `[Scheduled: ${nextDateVal} @ ${nextTimeVal}] ${callNoteInput}` : callNoteInput);
-
-    const payload = {
-      action: "update_call",
-      rowIndex: activeLeadModal.rowIndex,
-      nextStage: nextStageVal,
-      nextCallDate: nextDateVal,
-      nextCallTime: nextTimeVal,
-      lastCallDate: todayDate,
-      callStatus: callStatusInput,
-      orderAmount: finalAmt,
-      stageNoteColumn: stepInfo.noteCol,
-      note: finalRemark,
-    };
-
     try {
+      const currentStage = activeLeadModal["Current_Stage"] || "Day 1";
+      const stepInfo = calculateNextFollowUp(activeLeadModal);
+
+      let nextStageVal = stepInfo.nextStage;
+      let nextDateVal = stepInfo.nextDate;
+      let nextTimeVal = "";
+
+      if (customDateTimeEnabled && customDateInput) {
+        nextDateVal = customDateInput;
+        nextTimeVal = customTimeInput || "";
+      } else if (callStatusInput === "Busy / Call Tomorrow" || callStatusInput === "Ringing / Not Picked") {
+        nextStageVal = currentStage;
+        const tmw = new Date();
+        tmw.setDate(tmw.getDate() + 1);
+        nextDateVal = tmw.toISOString().split("T")[0];
+      } else if (callStatusInput === "Order Confirmed" || callStatusInput === "Not Interested") {
+        nextStageVal = "CLOSED";
+        nextDateVal = "CLOSED";
+      }
+
+      const finalAmt = callStatusInput === "Order Confirmed" ? (parseFloat(orderAmountInput) || 0) : 0;
+      const finalRemark = callStatusInput === "Order Confirmed" 
+        ? `[ORDER: ₹${finalAmt}] ${orderDetailsInput} | Note: ${callNoteInput}`
+        : (customTimeInput ? `[Scheduled: ${nextDateVal} @ ${nextTimeVal}] ${callNoteInput}` : callNoteInput);
+
+      const payload = {
+        action: "update_call",
+        rowIndex: Number(activeLeadModal.rowIndex),
+        nextStage: nextStageVal,
+        nextCallDate: nextDateVal,
+        nextCallTime: nextTimeVal,
+        lastCallDate: todayDate,
+        callStatus: callStatusInput,
+        orderAmount: finalAmt,
+        stageNoteColumn: stepInfo.noteCol,
+        note: finalRemark,
+      };
+
       await fetch(loggedInCaller.sheetApiUrl, {
         method: "POST",
         mode: "no-cors",
@@ -362,41 +364,49 @@ export default function KhushaliCallerCRM() {
 
       setActiveLeadModal(null);
       setShowSmartPopup(false);
+      setIsPopupMinimized(false);
       setCallNoteInput("");
       setOrderAmountInput("");
       setOrderDetailsInput("");
     } catch (e) {
-      alert("Sheet update karne mein dikkat aayi!");
+      alert("Sheet update karne mein dikkat aayi: " + e.message);
     } finally {
       setSaving(false);
     }
   };
 
-  // NEW CUSTOMER IN-APP SUBMIT (No Google Form needed)
+  // IN-APP NEW CUSTOMER SUBMIT (CRASH-PROOF)
   const handleAddNewCustomer = async (e) => {
     e.preventDefault();
     if (!loggedInCaller) return;
-    setSaving(true);
-
-    const newRowIndex = leads.length > 0 ? Math.max(...leads.map(l => l.rowIndex || 0)) + 1 : 2;
-    const newEntry = {
-      rowIndex: newRowIndex,
-      Timestamp: new Date().toISOString(),
-      Day_1_Date: todayDate,
-      Name: newLeadForm.name.trim(),
-      Number: newLeadForm.number.trim(),
-      "Contact Number": newLeadForm.number.trim(),
-      City: newLeadForm.city.trim(),
-      "सर आपका बजट कितना है?": newLeadForm.budget.trim(),
-      "आपको कौन कौनसे chemical चाहिए?": newLeadForm.chemicals.trim(),
-      Current_Stage: "Day 1",
-      Next_Call_Date: todayDate,
-      Next_Call_Time: "",
-      Call_Status: "New",
-      Day_1_Note: newLeadForm.note ? `[${todayDate}] ${newLeadForm.note}` : ""
-    };
 
     try {
+      setSaving(true);
+      const newRowIndex = leads.length > 0 ? Math.max(...leads.map(l => l.rowIndex || 0)) + 1 : 2;
+
+      const cleanName = String(newLeadForm.name || "").trim();
+      const cleanNumber = String(newLeadForm.number || "").trim();
+      const cleanCity = String(newLeadForm.city || "").trim();
+      const cleanBudget = String(newLeadForm.budget || "").trim();
+      const cleanChemicals = String(newLeadForm.chemicals || "").trim();
+
+      const newEntry = {
+        rowIndex: newRowIndex,
+        Timestamp: new Date().toISOString(),
+        Day_1_Date: todayDate,
+        Name: cleanName,
+        Number: cleanNumber,
+        "Contact Number": cleanNumber,
+        City: cleanCity,
+        "सर आपका बजट कितना है?": cleanBudget,
+        "आपको कौन कौनसे chemical चाहिए?": cleanChemicals,
+        Current_Stage: "Day 1",
+        Next_Call_Date: todayDate,
+        Next_Call_Time: "",
+        Call_Status: "New",
+        Day_1_Note: newLeadForm.note ? `[${todayDate}] ${newLeadForm.note}` : ""
+      };
+
       await fetch(loggedInCaller.sheetApiUrl, {
         method: "POST",
         mode: "no-cors",
@@ -408,21 +418,21 @@ export default function KhushaliCallerCRM() {
       setNewCustomerModalOpen(false);
       setNewLeadForm({ name: "", number: "", city: "", budget: "", chemicals: "", note: "" });
     } catch (err) {
-      alert("Naya customer add karne me dikkat aayi!");
+      alert("Naya customer add karne me dikkat aayi: " + err.message);
     } finally {
       setSaving(false);
     }
   };
 
-  // EDIT CUSTOMER DIRECTLY IN CRM
+  // IN-APP EDIT CUSTOMER INFO (CRASH-PROOF: STRING-SAFE)
   const handleOpenEditCustomer = (lead) => {
     setEditLeadForm({
       rowIndex: lead.rowIndex,
-      name: lead["Name"] || "",
-      number: lead["Number"] || lead["Contact Number"] || "",
-      city: lead["City"] || "",
-      budget: lead["सर आपका बजट कितना है?"] || "",
-      chemicals: lead["आपको कौन कौनसे chemical चाहिए?"] || ""
+      name: String(lead["Name"] || ""),
+      number: String(lead["Number"] || lead["Contact Number"] || ""),
+      city: String(lead["City"] || ""),
+      budget: String(lead["सर आपका बजट कितना है?"] || ""),
+      chemicals: String(lead["आपको कौन कौनसे chemical चाहिए?"] || "")
     });
     setEditCustomerModalOpen(true);
   };
@@ -430,19 +440,26 @@ export default function KhushaliCallerCRM() {
   const handleSaveCustomerEdit = async (e) => {
     e.preventDefault();
     if (!loggedInCaller) return;
-    setSaving(true);
-
-    const payload = {
-      action: "edit_lead",
-      rowIndex: editLeadForm.rowIndex,
-      name: editLeadForm.name.trim(),
-      number: editLeadForm.number.trim(),
-      city: editLeadForm.city.trim(),
-      budget: editLeadForm.budget.trim(),
-      chemicals: editLeadForm.chemicals.trim()
-    };
 
     try {
+      setSaving(true);
+
+      const cleanName = String(editLeadForm.name || "").trim();
+      const cleanNumber = String(editLeadForm.number || "").trim();
+      const cleanCity = String(editLeadForm.city || "").trim();
+      const cleanBudget = String(editLeadForm.budget || "").trim();
+      const cleanChemicals = String(editLeadForm.chemicals || "").trim();
+
+      const payload = {
+        action: "edit_lead",
+        rowIndex: Number(editLeadForm.rowIndex),
+        name: cleanName,
+        number: cleanNumber,
+        city: cleanCity,
+        budget: cleanBudget,
+        chemicals: cleanChemicals
+      };
+
       await fetch(loggedInCaller.sheetApiUrl, {
         method: "POST",
         mode: "no-cors",
@@ -455,39 +472,38 @@ export default function KhushaliCallerCRM() {
           item.rowIndex === editLeadForm.rowIndex
             ? {
                 ...item,
-                Name: editLeadForm.name,
-                Number: editLeadForm.number,
-                "Contact Number": editLeadForm.number,
-                City: editLeadForm.city,
-                "सर आपका बजट कितना है?": editLeadForm.budget,
-                "आपको कौन कौनसे chemical चाहिए?": editLeadForm.chemicals,
+                Name: cleanName,
+                Number: cleanNumber,
+                "Contact Number": cleanNumber,
+                City: cleanCity,
+                "सर आपका बजट कितना है?": cleanBudget,
+                "आपको कौन कौनसे chemical चाहिए?": cleanChemicals,
               }
             : item
         )
       );
 
-      // If active inside history modal, update it too
       if (historyModalLead && historyModalLead.rowIndex === editLeadForm.rowIndex) {
         setHistoryModalLead((prev) => ({
           ...prev,
-          Name: editLeadForm.name,
-          Number: editLeadForm.number,
-          "Contact Number": editLeadForm.number,
-          City: editLeadForm.city,
-          "सर आपका बजट कितना है?": editLeadForm.budget,
-          "आपको कौन कौनसे chemical चाहिए?": editLeadForm.chemicals,
+          Name: cleanName,
+          Number: cleanNumber,
+          "Contact Number": cleanNumber,
+          City: cleanCity,
+          "सर आपका बजट कितना है?": cleanBudget,
+          "आपको कौन कौनसे chemical चाहिए?": cleanChemicals,
         }));
       }
 
       setEditCustomerModalOpen(false);
     } catch (err) {
-      alert("Customer details update karne me error aaya!");
+      alert("Customer details update karne me error aaya: " + err.message);
     } finally {
       setSaving(false);
     }
   };
 
-  // FILTER LOGIC
+  // FILTERED LEADS FOR CURRENT TAB
   const filteredLeads = useMemo(() => {
     return leads.filter((l) => {
       const status = l["Call_Status"] || "New";
@@ -615,7 +631,6 @@ export default function KhushaliCallerCRM() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* IN-APP ADD CUSTOMER BUTTON */}
           <button
             onClick={() => setNewCustomerModalOpen(true)}
             className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md shadow-emerald-500/20"
@@ -625,7 +640,10 @@ export default function KhushaliCallerCRM() {
 
           {smartPopupLead && !showSmartPopup && (
             <button
-              onClick={() => setShowSmartPopup(true)}
+              onClick={() => {
+                setShowSmartPopup(true);
+                setIsPopupMinimized(false);
+              }}
               className="flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/40 text-amber-300 px-3 py-2 rounded-xl text-xs font-bold animate-pulse"
             >
               <BellRing className="w-3.5 h-3.5" /> Next Call Popup
@@ -648,7 +666,7 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
-      {/* 🚀 LIVE DAILY PERFORMANCE SCORECARD */}
+      {/* 🚀 LIVE DAILY SCORECARD */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center text-xs text-slate-400 font-semibold">
@@ -755,7 +773,7 @@ export default function KhushaliCallerCRM() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-slate-900 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider">
-                <th className="p-3.5">Customer & Contact (Click Name for History)</th>
+                <th className="p-3.5">Customer & Contact (Click Name for Remarks History)</th>
                 <th className="p-3.5">City & Requirement</th>
                 <th className="p-3.5">Status / Stage</th>
                 <th className="p-3.5">Last Call</th>
@@ -784,7 +802,6 @@ export default function KhushaliCallerCRM() {
                   return (
                     <tr key={index} className="hover:bg-slate-800/40 transition group">
                       <td className="p-3.5">
-                        {/* 1. CLICK NAME TO OPEN REMARKS & DETAILS HISTORY */}
                         <div 
                           onClick={() => setHistoryModalLead(lead)} 
                           className="font-bold text-white group-hover:text-emerald-400 transition cursor-pointer flex items-center gap-1.5"
@@ -838,7 +855,7 @@ export default function KhushaliCallerCRM() {
                         <button
                           onClick={() => handleOpenEditCustomer(lead)}
                           className="inline-block p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition text-xs"
-                          title="Edit Customer Info Directly"
+                          title="Edit Customer Details"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
@@ -874,61 +891,112 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
-      {/* 🔔 3. SMART CALL NOW POPUP WITH SNOOZE TO LAST POSITION */}
+      {/* 🔔 SMART CALL POPUP (WITH SNOOZE-TO-LAST & SLEEK MINIMIZE BAR) */}
       {showSmartPopup && smartPopupLead && !activeLeadModal && !historyModalLead && (
-        <div className="fixed bottom-5 right-5 left-5 md:left-auto md:w-[440px] bg-slate-900 border-2 border-emerald-500 rounded-3xl p-5 shadow-2xl z-40 animate-fade-in">
-          <div className="flex justify-between items-start mb-3">
-            <span className="bg-emerald-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
-              <BellRing className="w-3 h-3" /> 
-              {smartPopupLead["Next_Call_Time"] ? `Scheduled Call Time: ${smartPopupLead["Next_Call_Time"]}` : "Next Due Call"}
-            </span>
-            {/* SNOOZE PUSHES TO LAST */}
-            <button 
-              onClick={handleSnooze} 
-              className="text-amber-400 hover:text-amber-300 text-xs bg-amber-950/60 border border-amber-800/60 px-2.5 py-1 rounded-lg font-bold transition"
-              title="Number list ke last me bhej do"
-            >
-              Snooze (Last me daalo)
-            </button>
-          </div>
-
-          <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-3.5 mb-4 space-y-1.5">
-            <h3 className="text-lg font-extrabold text-white">{smartPopupLead["Name"] || "Customer"}</h3>
-            <p className="text-sm font-mono text-emerald-400">{smartPopupLead["Number"] || smartPopupLead["Contact Number"]}</p>
-            <div className="text-xs text-slate-300">
-              <strong>Requirement:</strong> {smartPopupLead["आपको कौन कौनसे chemical चाहिए?"] || "—"}
+        isPopupMinimized ? (
+          // MINIMIZED FLOATING BAR
+          <div
+            onClick={() => setIsPopupMinimized(false)}
+            className="fixed bottom-5 right-5 bg-slate-900/95 border-2 border-emerald-500/80 rounded-2xl px-4 py-3 shadow-2xl z-40 flex items-center gap-3 cursor-pointer hover:bg-slate-800 hover:border-emerald-400 transition animate-pulse"
+            title="Click karein expand karne ke liye"
+          >
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+            <div className="flex items-center gap-2">
+              <BellRing className="w-4 h-4 text-amber-400" />
+              <div>
+                <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>Call Minimized: {smartPopupLead["Name"] || "Next Lead"}</span>
+                </div>
+                <div className="text-[10px] text-emerald-400 font-mono">
+                  {smartPopupLead["Number"] || smartPopupLead["Contact Number"]}
+                </div>
+              </div>
             </div>
-            {smartPopupLead["City"] && (
-              <div className="text-xs text-slate-400"><strong>City:</strong> {smartPopupLead["City"]}</div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <a
-              href={`tel:${smartPopupLead["Number"] || smartPopupLead["Contact Number"]}`}
-              className="flex items-center justify-center gap-1.5 bg-emerald-500 text-slate-950 font-bold py-2.5 rounded-xl text-xs"
-            >
-              <Phone className="w-3.5 h-3.5" /> Call
-            </a>
-            <a
-              href={`https://wa.me/91${smartPopupLead["Number"] || smartPopupLead["Contact Number"]}?text=${encodeURIComponent(`Namaste ${smartPopupLead["Name"] || ""} ji, Khushali Chemicals se ${loggedInCaller.name} baat kar raha hoon...`)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-center gap-1.5 bg-emerald-950 border border-emerald-700 text-emerald-300 py-2.5 rounded-xl text-xs"
-            >
-              <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
-            </a>
             <button
-              onClick={() => handleOpenUpdateModal(smartPopupLead)}
-              className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs border border-slate-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPopupMinimized(false);
+              }}
+              className="ml-2 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 px-2.5 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1"
             >
-              Update
+              <Maximize2 className="w-3 h-3" /> Expand
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSmartPopup(false);
+                setIsPopupMinimized(false);
+              }}
+              className="text-slate-400 hover:text-white p-1 rounded-lg"
+              title="Close"
+            >
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
+        ) : (
+          // EXPANDED POPUP WINDOW
+          <div className="fixed bottom-5 right-5 left-5 md:left-auto md:w-[440px] bg-slate-900 border-2 border-emerald-500 rounded-3xl p-5 shadow-2xl z-40 animate-fade-in">
+            <div className="flex justify-between items-center mb-3">
+              <span className="bg-emerald-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+                <BellRing className="w-3 h-3" /> 
+                {smartPopupLead["Next_Call_Time"] ? `Alarm: ${smartPopupLead["Next_Call_Time"]}` : "Next Due Call"}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button 
+                  onClick={() => setIsPopupMinimized(true)} 
+                  className="text-slate-300 hover:text-white text-xs bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
+                  title="Window minimize karein"
+                >
+                  <Minimize2 className="w-3 h-3" /> Minimize
+                </button>
+                <button 
+                  onClick={handleSnooze} 
+                  className="text-amber-400 hover:text-amber-300 text-xs bg-amber-950/60 border border-amber-800/60 px-2.5 py-1 rounded-lg font-bold transition"
+                  title="Number list ke last me bhejo aur window minimize karo"
+                >
+                  Snooze (Last me bhejo)
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-3.5 mb-4 space-y-1.5">
+              <h3 className="text-lg font-extrabold text-white">{smartPopupLead["Name"] || "Customer"}</h3>
+              <p className="text-sm font-mono text-emerald-400">{smartPopupLead["Number"] || smartPopupLead["Contact Number"]}</p>
+              <div className="text-xs text-slate-300">
+                <strong>Requirement:</strong> {smartPopupLead["आपको कौन कौनसे chemical चाहिए?"] || "—"}
+              </div>
+              {smartPopupLead["City"] && (
+                <div className="text-xs text-slate-400"><strong>City:</strong> {smartPopupLead["City"]}</div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <a
+                href={`tel:${smartPopupLead["Number"] || smartPopupLead["Contact Number"]}`}
+                className="flex items-center justify-center gap-1.5 bg-emerald-500 text-slate-950 font-bold py-2.5 rounded-xl text-xs"
+              >
+                <Phone className="w-3.5 h-3.5" /> Call
+              </a>
+              <a
+                href={`https://wa.me/91${smartPopupLead["Number"] || smartPopupLead["Contact Number"]}?text=${encodeURIComponent(`Namaste ${smartPopupLead["Name"] || ""} ji, Khushali Chemicals se ${loggedInCaller.name} baat kar raha hoon...`)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-1.5 bg-emerald-950 border border-emerald-700 text-emerald-300 py-2.5 rounded-xl text-xs"
+              >
+                <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
+              </a>
+              <button
+                onClick={() => handleOpenUpdateModal(smartPopupLead)}
+                className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs border border-slate-700"
+              >
+                Update
+              </button>
+            </div>
+          </div>
+        )
       )}
 
-      {/* 📝 1. REMARKS & COMPLETE DISCUSSION HISTORY MODAL */}
+      {/* 📝 REMARKS & TIMELINE DISCUSSION HISTORY MODAL */}
       {historyModalLead && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -945,16 +1013,13 @@ export default function KhushaliCallerCRM() {
                 <p className="text-xs text-slate-400 font-mono mt-0.5">{historyModalLead["Number"] || historyModalLead["Contact Number"]}</p>
               </div>
               <button
-                onClick={() => {
-                  handleOpenEditCustomer(historyModalLead);
-                }}
+                onClick={() => handleOpenEditCustomer(historyModalLead)}
                 className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl font-bold transition"
               >
                 <Edit3 className="w-3.5 h-3.5 text-emerald-400" /> Edit Details
               </button>
             </div>
 
-            {/* Quick Profile Summary */}
             <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-2xl border border-slate-800">
               <div><span className="text-slate-500">City:</span> <span className="font-semibold text-slate-200">{historyModalLead["City"] || "—"}</span></div>
               <div><span className="text-slate-500">Budget:</span> <span className="font-semibold text-emerald-400">₹{historyModalLead["सर आपका बजट कितना है?"] || "—"}</span></div>
@@ -962,7 +1027,6 @@ export default function KhushaliCallerCRM() {
               <div className="col-span-2 mt-1"><span className="text-slate-500">Current Status:</span> <span className="font-bold text-amber-400">{historyModalLead["Call_Status"] || "New"} ({historyModalLead["Current_Stage"] || "Day 1"})</span></div>
             </div>
 
-            {/* Stage-wise Remarks Timeline */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
                 <CalendarCheck className="w-4 h-4 text-emerald-400" /> Cadence Remarks Timeline
@@ -983,10 +1047,9 @@ export default function KhushaliCallerCRM() {
                   );
                 })}
 
-                {/* If no cadence notes are filled yet */}
                 {!FOLLOWUP_FLOW.some(f => historyModalLead[f.noteCol]) && (
                   <div className="p-6 text-center text-xs text-slate-500 bg-slate-950 rounded-xl border border-slate-800">
-                    Abhi tak is customer ka koi previous remark note record nahi hua hai.
+                    Abhi tak is customer ka koi previous cadence remark record nahi hua hai.
                   </div>
                 )}
               </div>
@@ -1007,7 +1070,7 @@ export default function KhushaliCallerCRM() {
         </div>
       )}
 
-      {/* ⏰ 2. UPDATE CALL MODAL WITH OPTIONAL CUSTOM DATE & TIME */}
+      {/* ⏰ UPDATE CALL MODAL WITH OPTIONAL EXACT DATE & TIME */}
       {activeLeadModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -1037,7 +1100,6 @@ export default function KhushaliCallerCRM() {
                 </select>
               </div>
 
-              {/* OPTIONAL CUSTOM DATE & TIME SCHEDULER */}
               {callStatusInput !== "Order Confirmed" && callStatusInput !== "Not Interested" && (
                 <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300">
@@ -1076,7 +1138,6 @@ export default function KhushaliCallerCRM() {
                 </div>
               )}
 
-              {/* DYNAMIC FIELD: ORDER AMOUNT & DETAILS */}
               {callStatusInput === "Order Confirmed" && (
                 <div className="p-3.5 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl space-y-3 animate-fade-in">
                   <div>
@@ -1130,7 +1191,7 @@ export default function KhushaliCallerCRM() {
         </div>
       )}
 
-      {/* ➕ 5. IN-APP NEW CUSTOMER CREATION MODAL */}
+      {/* ➕ IN-APP NEW CUSTOMER CREATION MODAL */}
       {newCustomerModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl space-y-4">
@@ -1141,7 +1202,7 @@ export default function KhushaliCallerCRM() {
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Direct Entry</span>
               <h3 className="text-xl font-black text-white">Naya Customer Jodein</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Google Form kholne ki zaroorat nahi hai, yahan se direct save karein.</p>
+              <p className="text-xs text-slate-400 mt-0.5">Yahan direct save karein, Google Form ki zaroorat nahi hai.</p>
             </div>
 
             <form onSubmit={handleAddNewCustomer} className="space-y-3">
@@ -1207,7 +1268,7 @@ export default function KhushaliCallerCRM() {
                 <label className="text-xs font-semibold text-slate-300 block mb-1">Initial Discussion / Remark</label>
                 <textarea
                   rows={2}
-                  placeholder="Initial inquiry details..."
+                  placeholder="Inquiry notes..."
                   value={newLeadForm.note}
                   onChange={(e) => setNewLeadForm({ ...newLeadForm, note: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
@@ -1219,14 +1280,14 @@ export default function KhushaliCallerCRM() {
                 disabled={saving}
                 className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/20"
               >
-                {saving ? "Saving..." : "Customer Add Karein"}
+                {saving ? "Saving to Sheet..." : "Customer Add Karein"}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* ✏️ 5. IN-APP DIRECT EDIT CUSTOMER INFO MODAL */}
+      {/* ✏️ IN-APP DIRECT EDIT CUSTOMER INFO MODAL (CRASH-PROOF) */}
       {editCustomerModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl space-y-4">
@@ -1298,7 +1359,7 @@ export default function KhushaliCallerCRM() {
                 disabled={saving}
                 className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-amber-500/20"
               >
-                {saving ? "Updating..." : "Save Updated Details"}
+                {saving ? "Updating Sheet..." : "Save Updated Details"}
               </button>
             </form>
           </div>
