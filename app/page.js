@@ -4,7 +4,9 @@ import {
   Phone, MessageSquare, Lock, LogOut, RefreshCw, 
   X, BellRing, PlusCircle, CheckCircle2, ArrowRight,
   TrendingUp, Award, IndianRupee, CalendarCheck, Clock,
-  Calendar, Edit3, History, Maximize2, Minimize2, Search, Contact
+  Calendar, Edit3, History, Maximize2, Minimize2, Search, 
+  Contact, Building2, Zap, BookOpen, ShieldAlert, Flame, 
+  Users, Copy, Check, Sparkles, FlaskConical
 } from "lucide-react";
 
 const FOLLOWUP_FLOW = [
@@ -21,6 +23,7 @@ const CALLER_PROFILES = {
   piyush: {
     id: "piyush",
     name: "Piyush",
+    role: "caller",
     whatsappLine: "WhatsApp SIM 1",
     dailyTargetRevenue: 13500,
     dailyTargetCalls: 40,
@@ -32,6 +35,7 @@ const CALLER_PROFILES = {
   garv: {
     id: "garv",
     name: "Garv",
+    role: "caller",
     whatsappLine: "WhatsApp SIM 2",
     dailyTargetRevenue: 13500,
     dailyTargetCalls: 40,
@@ -39,7 +43,224 @@ const CALLER_PROFILES = {
     password: process.env.NEXT_PUBLIC_GARV_PASS || "garv123",
     sheetApiUrl: process.env.NEXT_PUBLIC_GARV_SHEET_URL,
     formUrl: process.env.NEXT_PUBLIC_GARV_FORM_URL || "https://docs.google.com/forms",
+  },
+  admin: {
+    id: "admin",
+    name: "Admin (Trainer)",
+    role: "admin",
+    whatsappLine: "All Lines (Master View)",
+    dailyTargetRevenue: 27000,
+    dailyTargetCalls: 80,
+    dailyTargetOrders: 4,
+    password: process.env.NEXT_PUBLIC_ADMIN_PASS || "admin123",
   }
+};
+
+// 📚 OFFICIAL KHUSHALI CHEMICALS CATALOG & FORMULATION DATA (From PDF)
+const PRODUCT_CATALOG = [
+  {
+    name: "White Phenyl Raw Material",
+    slabs: "5Kg: ₹255/kg | 25Kg: ₹250/kg | 50Kg: ₹245/kg",
+    ratio: "1:30 (1 Kg Concentrate + 30 Kg Water)",
+    instructions: "TDS 150-250 वाला पानी धीरे-धीरे डालें और अच्छी तरह मिलाएँ।"
+  },
+  {
+    name: "Colour Phenyl (Rose)",
+    slabs: "5Kg: ₹265/kg | 25Kg: ₹260/kg | 50Kg: ₹255/kg",
+    ratio: "1:30 (1 Kg Concentrate + 30 Kg Water)",
+    instructions: "TDS 150-250 वाला पानी धीरे-धीरे डालें और अच्छी तरह मिलाएँ।"
+  },
+  {
+    name: "Black Phenyl Raw Material",
+    slabs: "5Kg: ₹175/kg | 25Kg: ₹170/kg | 50Kg: ₹165/kg",
+    ratio: "1:6 से 1:9 (1 Kg Concentrate + 6-9 Kg Water)",
+    instructions: "RO पानी (< 70 TDS) का उपयोग करें और अच्छी तरह मिक्स करें।"
+  },
+  {
+    name: "Toilet Cleaner Raw Material",
+    slabs: "5Kg: ₹125/kg | 15Kg: ₹120/kg | 50Kg: ₹115/kg",
+    ratio: "1:7 (1 Kg Concentrate + 7 Kg Water)",
+    instructions: "RO पानी (< 70 TDS) का उपयोग करें और अच्छी तरह मिक्स करें।"
+  },
+  {
+    name: "Bathroom Cleaner Raw Material",
+    slabs: "5Kg: ₹145/kg | 25Kg: ₹140/kg | 50Kg: ₹135/kg",
+    ratio: "1:4 से 1:8 (1 Kg Concentrate + 4-8 Kg Water)",
+    instructions: "RO पानी (< 70 TDS) मिलाकर 2-3 घंटे छोड़ दें।"
+  },
+  {
+    name: "Floor Cleaner Raw Material",
+    slabs: "5Kg: ₹820/kg | 25Kg: ₹810/kg | 50Kg: ₹800/kg",
+    ratio: "1:40 से 1:60 (1 Kg Concentrate + 40-60 Kg Water)",
+    instructions: "कम लागत में हाई-क्वालिटी फ्लोर क्लीनर।"
+  },
+  {
+    name: "Hand Wash (Rose) Raw Material",
+    slabs: "5Kg: ₹350/kg | 25Kg: ₹345/kg | 50Kg: ₹340/kg",
+    ratio: "1:9 (1 Kg Concentrate + 8.5 Kg Water + 500g Salt)",
+    instructions: "पहले पानी में 500g नमक घोलें, फिर कंसन्ट्रेट डालें। 24 घंटे (1 दिन) स्थिर छोड़ दें ताकि झाग खत्म हो और पारदर्शी दिखे।"
+  },
+  {
+    name: "Dishwash Raw Material",
+    slabs: "5Kg: ₹350/kg | 25Kg: ₹345/kg | 50Kg: ₹340/kg",
+    ratio: "1:9 (1 Kg Concentrate + 8.5 Kg Water + 500g Salt)",
+    instructions: "पानी में 500g नमक और 500-1000g पॉवर बूस्टर मिलाएँ। 1 दिन (24 घंटे) रखें।"
+  },
+  {
+    name: "Fabric Wash Raw Material",
+    slabs: "5Kg: ₹350/kg | 25Kg: ₹345/kg | 50Kg: ₹340/kg",
+    ratio: "1:9 (1 Kg Concentrate + 8.5 Kg Water + 500g Salt)",
+    instructions: "पहले पानी में 500g नमक घोलें। मिक्स करके 1 दिन के लिए रख दें।"
+  },
+  {
+    name: "Glass Cleaner Raw Material",
+    slabs: "5Kg: ₹160/kg | 25Kg: ₹155/kg | 50Kg: ₹150/kg",
+    ratio: "1:80 से 1:100 (1 Kg Concentrate + 80-100 Kg Water)",
+    instructions: "सादा RO पानी न लें। हमेशा 0 TDS (Battery/DM Water) ही उपयोग करें ताकि कांच पर निशान न पड़ें।"
+  },
+  {
+    name: "Car Wash Raw Material",
+    slabs: "5Kg: ₹350/kg | 25Kg: ₹345/kg | 50Kg: ₹340/kg",
+    ratio: "1:9 (1 Kg Concentrate + 8.5 Kg Water + 500g Salt)",
+    instructions: "पहले पानी में 500g नमक मिलाएँ, फिर कंसन्ट्रेट मिक्स करें।"
+  },
+  {
+    name: "Room Freshener (Rose, Jasmine, Mogra)",
+    slabs: "5Kg: ₹1220/kg | 10Kg: ₹1210/kg",
+    ratio: "1:20 (1 Kg Concentrate + 15 Kg Water)",
+    instructions: "RO पानी (< 70 TDS) में मिलाएं और बोतल में चेक करें।"
+  }
+];
+
+// 🛡️ OFFICIAL 12 OBJECTION HANDLING SCRIPTS (From PDF)
+const OBJECTION_SCRIPTS = [
+  {
+    id: 1,
+    title: "1. Price बहुत ज्यादा है",
+    customer: "भाई, आपका price बहुत ज्यादा है।",
+    reply: "सर, मैं आपकी बात समझ सकता हूँ। अगर मैं आपकी जगह होता तो मैं भी सबसे पहले price compare करता। लेकिन एक बात पूछूँ? क्या आप सबसे सस्ता solution चाहते हैं... या ऐसा solution जो बार-बार पैसा खर्च होने से बचाए? हमारा focus सिर्फ product बेचना नहीं, result देना है। इसी वजह से हमारे existing customers आज भी हमारे साथ जुड़े हुए हैं।"
+  },
+  {
+    id: 2,
+    title: "2. सोचकर बताऊँगा",
+    customer: "मैं सोचकर बताऊँगा।",
+    reply: "बिलकुल सर, सोचना चाहिए। लेकिन अगर आप allow करें तो सिर्फ एक सवाल पूछूँ? आपको किस बात पर सबसे ज़्यादा doubt है? Price? Quality? Trust? या Timing? ताकि मैं वही clear कर दूँ।"
+  },
+  {
+    id: 3,
+    title: "3. Budget नहीं है",
+    customer: "अभी budget नहीं है।",
+    reply: "समझ सकता हूँ सर। लेकिन क्या issue budget का है... या अभी investment करने का confidence नहीं बन रहा? अगर सिर्फ budget की बात है, तो हम उसके हिसाब से छोटा Trial / Sample Kit option भी discuss कर सकते हैं।"
+  },
+  {
+    id: 4,
+    title: "4. दूसरी Company सस्ता दे रही है",
+    customer: "दूसरी company इससे सस्ता दे रही है।",
+    reply: "हो सकता है सर। लेकिन क्या मैं पूछ सकता हूँ... क्या आपने सिर्फ price compare किया है... या dilution ratio, quality और after-sales support भी? क्योंकि सस्ता खरीदना आसान है... लेकिन बाद में batch खराब होने पर regret करना महंगा पड़ता है।"
+  },
+  {
+    id: 5,
+    title: "5. Online Trust नहीं है",
+    customer: "मुझे online भरोसा नहीं है।",
+    reply: "सर, आजकल trust होना बहुत जरूरी है। इसीलिए हम पहले सारी details share करते हैं — GST (08PBDPS5444B1ZD), Jaipur Factory/Office Details, Founder @rohitsam.0 की 20+ states की dispatch journey और Previous Client Proof, उसके बाद ही आगे बढ़ते हैं। हम चाहते हैं कि decision trust से हो, pressure से नहीं।"
+  },
+  {
+    id: 6,
+    title: "6. Partner से पूछना पड़ेगा",
+    customer: "Partner से पूछना पड़ेगा।",
+    reply: "बिलकुल सर। Final decision हमेशा discuss करके लेना चाहिए। बस एक request है... जब आप उनसे बात करें, तो अगर चाहें मैं दोनों को एक साथ conference call पर सारी formulation और margin details समझा देता हूँ ताकि कोई confusion न रहे।"
+  },
+  {
+    id: 7,
+    title: "7. अभी जरूरत नहीं है",
+    customer: "अभी जरूरत नहीं है।",
+    reply: "समझ सकता हूँ सर। बस एक सवाल... अगर आज जरूरत नहीं है, तो आपको कब लगेगा कि सही time आ गया है? मैं इसलिए पूछ रहा हूँ ताकि सही समय पर ही आपको contact करूँ।"
+  },
+  {
+    id: 8,
+    title: "8. अभी Busy हूँ",
+    customer: "अभी busy हूँ।",
+    reply: "कोई बात नहीं सर। मैं आपका सिर्फ 20 second लूँगा। अगर लगे useful नहीं है, मैं खुद call disconnect कर दूँगा।"
+  },
+  {
+    id: 9,
+    title: "9. WhatsApp कर दो",
+    customer: "WhatsApp कर दो।",
+    reply: "ज़रूर सर। लेकिन एक experience share करूँ? अधिकतर लोग message save करके भूल जाते हैं। मैं अभी catalog और sample details भेज देता हूँ। क्या मैं शाम को सिर्फ 2 minute follow-up call कर सकता हूँ?"
+  },
+  {
+    id: 10,
+    title: "10. मुझे जल्दी नहीं है / पहले सोचूँगा",
+    customer: "मुझे जल्दी नहीं है।",
+    reply: "बिलकुल सर। Decision बिना समझे नहीं लेना चाहिए। बस मैं ये जानना चाहता हूँ... अगर आपको आज decision नहीं लेना, तो उसकी सबसे बड़ी वजह क्या है?"
+  },
+  {
+    id: 11,
+    title: "11. Guarantee क्या है?",
+    customer: "अगर result नहीं मिला तो?",
+    reply: "बहुत अच्छा सवाल है। कोई भी genuine customer यही पूछता है। हम कभी हवा में बात नहीं करते—हम ready-to-mix compound देते हैं जिसमें 4-5 अलग केमिकल्स का झंझट ही नहीं है, साथ में पूरा mixing chart और video guidance देते हैं जिससे हर बार सेम गाढ़ापन और रिजल्ट आता है।"
+  },
+  {
+    id: 12,
+    title: "12. पहले किसी ने Fraud किया है",
+    customer: "पहले मेरे साथ fraud हो चुका है।",
+    reply: "सर, इसलिए आपका doubt बिल्कुल genuine है। इसी वजह से हम पहले Live Video Call, GST Verification (08PBDPS5444B1ZD), Client Bilty Proofs देते हैं, या आप सीधा हमारे जयपुर ऑफिस आकर भी माल ले सकते हैं। Trust कमाया जाता है, मांगा नहीं जाता।"
+  }
+];
+
+const GOLDEN_CLOSING_LINES = [
+  "सर, Decision आपका होगा, मेरा काम सिर्फ सही जानकारी देना है।",
+  "अगर आपको लगे कि value नहीं है, तो बिल्कुल मत लीजिए।",
+  "हम sale से पहले relationship बनाना पसंद करते हैं।",
+  "मैं pressure नहीं डालूँगा, बस confusion दूर करना चाहता हूँ।",
+  "हम product नहीं, customer का trust जीतने आए हैं।"
+];
+
+// Gentle Audio Chime for Scheduled Call Alarms
+const playNotificationChime = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(587.33, ctx.currentTime + 0.25);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.4);
+  } catch (e) {}
+};
+
+// 📲 WHATSAPP TEMPLATE GENERATOR (5 HIGH-CONVERTING TEMPLATES)
+const buildWhatsAppTemplate = (type, lead, callerName) => {
+  const name = lead?.["Name"] || "Sir";
+  const reqChem = lead?.["आपको कौन कौनसे chemical चाहिए?"] || "Cleaning Raw Materials";
+  const nextDate = lead?.["Next_Call_Date"] ? String(lead["Next_Call_Date"]).split("T")[0] : "जल्द";
+  const nextTime = lead?.["Next_Call_Time"] || "";
+
+  if (type === "sample_kit") {
+    return `नमस्ते ${name} जी! 🙏\n*Khushali Chemicals (Jaipur)* से ${callerName} बात कर रहा हूँ।\n\nअगर आप बड़ा ऑर्डर करने से पहले हमारी *Quality, Thickness और Fragrance* खुद टेस्ट करना चाहते हैं, तो आप हमारा *Business Starter Sample / Trial Kit* मंगवा सकते हैं:\n\n🧪 *Trial Kit के फायदे:*\n✅ *Ready-to-Mix Formula:* 4-5 अलग केमिकल्स मिलाने की झंझट खत्म, सिर्फ पानी मिलाएं और प्रोडक्ट तैयार!\n✅ *High Dilution Ratio:*\n• White/Rose Phenyl (1:30)\n• Handwash / Dishwash / Car Wash (1:9)\n• Toilet Cleaner (1:7)\n• Glass Cleaner (1:100)\n✅ *Complete Mixing Guide:* हर प्रोडक्ट की सटीक रेसिपी और वीडियो सपोर्ट साथ मिलेगा।\n\n📦 आज शाम की गाड़ी में आपका ट्रायल पैक या 5Kg कैन डिस्पैच करवा दें? कृपया अपना Pincode भेजें! 🚚`;
+  }
+
+  if (type === "price_list") {
+    return `नमस्ते ${name} जी! 🙏\n*KHUSHALI CHEMICALS (Jaipur)*\n*(All Rates Per Kg - Including 18% GST)*\n\n🔹 *White Phenyl Conc (1:30):* ₹255 (5Kg) | ₹245 (50Kg)\n🔹 *Rose Phenyl Conc (1:30):* ₹265 (5Kg) | ₹255 (50Kg)\n🔹 *Black Phenyl Conc (1:9):* ₹175 (5Kg) | ₹165 (50Kg)\n🔹 *Toilet Cleaner Conc (1:7):* ₹125 (5Kg) | ₹115 (50Kg)\n🔹 *Bathroom Cleaner (1:8):* ₹145 (5Kg) | ₹135 (50Kg)\n🔹 *Handwash / Dishwash / Fabric / Car Wash (1:9):* ₹350 (5Kg) | ₹340 (50Kg)\n🔹 *Glass Cleaner Conc (1:100):* ₹160 (5Kg) | ₹150 (50Kg)\n🔹 *Floor Cleaner Conc (1:60):* ₹820 (5Kg) | ₹800 (50Kg)\n🔹 *Room Freshener (1:20):* ₹1220 (5Kg)\n\n📋 *GST:* 08PBDPS5444B1ZD\n🌐 *Web:* khushalichemicals.com\n\nबताइए सर, इसमें से कौन-कौन से आइटम का कोटेशन या सैंपल पैक फाइनल करें?`;
+  }
+
+  if (type === "office_visit") {
+    return `नमस्ते ${name} जी! 🙏\n*Khushali Chemicals (Jaipur)* के ऑफिस विजिट के लिए आपका स्वागत है।\n\n📅 *Scheduled Visit:* ${nextDate}${nextTime ? " को " + nextTime + " बजे" : ""}\n📍 *Location:* Jaipur, Rajasthan\n🏢 *GST:* 08PBDPS5444B1ZD\n📞 *Contact:* 8905878950\n\nआप यहाँ आकर हमारे सभी Raw Material Compounds की लाइव मिक्सिंग और क्वालिटी चेक कर सकते हैं। जयपुर पहुँचने से पहले एक बार कॉल ज़रूर कीजियेगा!`;
+  }
+
+  if (type === "trust_proof") {
+    return `नमस्ते ${name} जी! 🙏\n*Khushali Chemicals (Jaipur)* भारत के 20+ राज्यों में क्लीनिंग रॉ मटेरियल सप्लाई कर रहा है।\n\n✨ *हमारी पहचान:*\n• *Founder:* Rohit Sambhawani (@rohitsam.0 on Instagram)\n• *Registered GST:* 08PBDPS5444B1ZD\n• *Website:* khushalichemicals.com\n• *1-Compound Technology:* बिना किसी कॉम्प्लेक्स प्रोसेस के सीधे पानी मिलाकर मार्केट-रेडी प्रोडक्ट बनाएं।\n\nहम प्रोडक्ट बेचने से पहले कस्टमर का भरोसा जीतने में विश्वास रखते हैं। आपकी *${reqChem}* की रिक्वायरमेंट के लिए कॉल पर बात करें?`;
+  }
+
+  // Default Follow-up
+  return `नमस्ते ${name} जी! 🙏 Khushali Chemicals (Jaipur) से ${callerName} बात कर रहा हूँ। आपकी *${reqChem}* की रिक्वायरमेंट के रिगार्डिंग हमने कोटेशन शेयर किया था। कृपया बताएं ट्रायल पैक या ऑर्डर कब डिस्पैच करवाएं?`;
 };
 
 export default function KhushaliCallerCRM() {
@@ -51,7 +272,11 @@ export default function KhushaliCallerCRM() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("today");
+  const [adminCallerFilter, setAdminCallerFilter] = useState("all"); // 'all' | 'piyush' | 'garv'
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ⚡ Power Auto-Dialer State
+  const [autoDialerActive, setAutoDialerActive] = useState(false);
 
   // Popups & Modals State
   const [smartPopupLead, setSmartPopupLead] = useState(null);
@@ -61,15 +286,22 @@ export default function KhushaliCallerCRM() {
   const [historyModalLead, setHistoryModalLead] = useState(null);
   const [newCustomerModalOpen, setNewCustomerModalOpen] = useState(false);
   const [editCustomerModalOpen, setEditCustomerModalOpen] = useState(false);
+  const [knowledgeModalTab, setKnowledgeModalTab] = useState(null); // 'catalog' | 'objections' | null
+  const [waTemplateModalLead, setWaTemplateModalLead] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
   
   // Call Update Inputs
   const [callStatusInput, setCallStatusInput] = useState("Interested");
+  const [leadPriorityInput, setLeadPriorityInput] = useState("WARM"); // HOT | WARM | COLD
   const [orderAmountInput, setOrderAmountInput] = useState("");
   const [orderDetailsInput, setOrderDetailsInput] = useState("");
+  const [visitDateInput, setVisitDateInput] = useState("");
+  const [visitTimeInput, setVisitTimeInput] = useState("11:00");
   const [callNoteInput, setCallNoteInput] = useState("");
   const [customDateTimeEnabled, setCustomDateTimeEnabled] = useState(false);
   const [customDateInput, setCustomDateInput] = useState("");
   const [customTimeInput, setCustomTimeInput] = useState("");
+  const [modalHelperTab, setModalHelperTab] = useState("none"); // 'none' | 'objections' | 'catalog'
   const [saving, setSaving] = useState(false);
 
   // New Customer Form State
@@ -79,12 +311,15 @@ export default function KhushaliCallerCRM() {
     city: "",
     budget: "",
     chemicals: "",
-    note: ""
+    priority: "HOT",
+    note: "",
+    targetCaller: "piyush"
   });
 
   // Edit Customer Form State
   const [editLeadForm, setEditLeadForm] = useState({
     rowIndex: null,
+    callerOwner: "piyush",
     name: "",
     number: "",
     city: "",
@@ -120,17 +355,70 @@ export default function KhushaliCallerCRM() {
     setSmartPopupLead(null);
     setShowSmartPopup(false);
     setIsPopupMinimized(false);
+    setAutoDialerActive(false);
     sessionStorage.removeItem("khushali_active_caller");
   };
 
+  // Helper to detect Priority from Notes or Status
+  const getLeadPriority = (lead) => {
+    const status = lead["Call_Status"] || "";
+    const allNotes = FOLLOWUP_FLOW.map(f => lead[f.noteCol] || "").join(" ");
+    if (allNotes.includes("[🔥 HOT]") || status === "Planning to Visit Office") return "HOT";
+    if (allNotes.includes("[🔵 COLD]")) return "COLD";
+    if (allNotes.includes("[🟡 WARM]")) return "WARM";
+    const budgetNum = parseFloat(String(lead["सर आपका बजट कितना है?"] || "").replace(/[^0-9]/g, "")) || 0;
+    if (budgetNum >= 15000) return "HOT";
+    return "WARM";
+  };
+
+  // FETCH SINGLE CALLER OR BOTH CALLERS (FOR ADMIN)
   const fetchCallerSheet = async () => {
-    if (!loggedInCaller || !loggedInCaller.sheetApiUrl) return;
+    if (!loggedInCaller) return;
     setLoading(true);
     try {
-      const res = await fetch(loggedInCaller.sheetApiUrl);
-      const data = await res.json();
-      if (data.status === "success") {
-        setLeads(data.leads || []);
+      if (loggedInCaller.role === "admin") {
+        const urls = [
+          { id: "piyush", name: "Piyush", url: CALLER_PROFILES.piyush.sheetApiUrl },
+          { id: "garv", name: "Garv", url: CALLER_PROFILES.garv.sheetApiUrl }
+        ];
+        const combined = [];
+        await Promise.all(
+          urls.map(async (u) => {
+            if (!u.url) return;
+            try {
+              const res = await fetch(u.url);
+              const data = await res.json();
+              if (data.status === "success" && Array.isArray(data.leads)) {
+                data.leads.forEach((l) => {
+                  combined.push({
+                    ...l,
+                    _callerId: u.id,
+                    _callerName: u.name,
+                    _sheetUrl: u.url,
+                    _uniqueKey: `${u.id}_${l.rowIndex}`
+                  });
+                });
+              }
+            } catch (e) {
+              console.error(`Error fetching ${u.name}:`, e);
+            }
+          })
+        );
+        setLeads(combined);
+      } else {
+        if (!loggedInCaller.sheetApiUrl) return;
+        const res = await fetch(loggedInCaller.sheetApiUrl);
+        const data = await res.json();
+        if (data.status === "success") {
+          const tagged = (data.leads || []).map((l) => ({
+            ...l,
+            _callerId: loggedInCaller.id,
+            _callerName: loggedInCaller.name,
+            _sheetUrl: loggedInCaller.sheetApiUrl,
+            _uniqueKey: `${loggedInCaller.id}_${l.rowIndex}`
+          }));
+          setLeads(tagged);
+        }
       }
     } catch (err) {
       console.error("Sheet fetch error:", err);
@@ -145,28 +433,43 @@ export default function KhushaliCallerCRM() {
     }
   }, [loggedInCaller]);
 
-  // LIVE DAILY STATS CALCULATION
-  const todayPerformance = useMemo(() => {
-    let callsCount = 0;
-    let ordersCount = 0;
-    let revenue = 0;
+  // 📊 ADMIN & CALLER PERFORMANCE METRICS
+  const performanceStats = useMemo(() => {
+    const calcForList = (list, targetRev = 13500) => {
+      let callsCount = 0;
+      let ordersCount = 0;
+      let revenue = 0;
+      let officeVisits = 0;
+      let overdueCount = 0;
+      let hotCount = 0;
 
-    leads.forEach((l) => {
-      const lastCall = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
-      if (lastCall === todayDate) {
-        callsCount += 1;
-        if (l["Call_Status"] === "Order Confirmed") {
-          ordersCount += 1;
-          const amt = parseFloat(l["Order_Amount"] || l["Amount"] || 0);
-          revenue += amt;
+      list.forEach((l) => {
+        const status = l["Call_Status"] || "New";
+        const isClosed = status === "Order Confirmed" || status === "Not Interested";
+        const lastCall = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
+        const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
+
+        if (lastCall === todayDate) {
+          callsCount += 1;
+          if (status === "Order Confirmed") {
+            ordersCount += 1;
+            revenue += parseFloat(l["Order_Amount"] || l["Amount"] || 0);
+          }
         }
-      }
-    });
+        if (!isClosed && status === "Planning to Visit Office") officeVisits += 1;
+        if (!isClosed && nextDate && nextDate < todayDate) overdueCount += 1;
+        if (!isClosed && getLeadPriority(l) === "HOT") hotCount += 1;
+      });
 
-    const targetRev = loggedInCaller?.dailyTargetRevenue || 13500;
-    const revProgress = Math.min(100, Math.round((revenue / targetRev) * 100));
+      const revProgress = Math.min(100, Math.round((revenue / targetRev) * 100));
+      return { callsCount, ordersCount, revenue, revProgress, officeVisits, overdueCount, hotCount, totalLeads: list.length };
+    };
 
-    return { callsCount, ordersCount, revenue, revProgress };
+    const overall = calcForList(leads, loggedInCaller?.dailyTargetRevenue || 13500);
+    const piyushStats = calcForList(leads.filter(l => l._callerId === "piyush"), 13500);
+    const garvStats = calcForList(leads.filter(l => l._callerId === "garv"), 13500);
+
+    return { overall, piyushStats, garvStats };
   }, [leads, todayDate, loggedInCaller]);
 
   // ALL TABS LIVE BADGE COUNTS
@@ -174,10 +477,16 @@ export default function KhushaliCallerCRM() {
     let today = 0;
     let calledToday = 0;
     let ordersToday = 0;
+    let officeVisit = 0;
+    let hotLeads = 0;
     let overdue = 0;
     let upcoming = 0;
 
-    leads.forEach((l) => {
+    const baseList = loggedInCaller?.role === "admin" && adminCallerFilter !== "all"
+      ? leads.filter(l => l._callerId === adminCallerFilter)
+      : leads;
+
+    baseList.forEach((l) => {
       const status = l["Call_Status"] || "New";
       const isClosed = status === "Order Confirmed" || status === "Not Interested";
       const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
@@ -189,16 +498,19 @@ export default function KhushaliCallerCRM() {
       }
 
       if (!isClosed) {
+        if (status === "Planning to Visit Office") officeVisit += 1;
+        if (getLeadPriority(l) === "HOT") hotLeads += 1;
+
         if (!nextDate || nextDate === todayDate) today += 1;
         else if (nextDate < todayDate) overdue += 1;
         else if (nextDate > todayDate) upcoming += 1;
       }
     });
 
-    return { today, calledToday, ordersToday, overdue, upcoming, all: leads.length };
-  }, [leads, todayDate]);
+    return { today, calledToday, ordersToday, officeVisit, hotLeads, overdue, upcoming, all: baseList.length };
+  }, [leads, todayDate, loggedInCaller, adminCallerFilter]);
 
-  // TIME-BASED CALL POPUP ALARM + CHECKER
+  // 🔔 TIME-BASED CALL POPUP ALARM + CHECKER
   useEffect(() => {
     if (!loggedInCaller || leads.length === 0) return;
 
@@ -206,7 +518,6 @@ export default function KhushaliCallerCRM() {
       const now = new Date();
       const currentTimeStr = now.toTimeString().slice(0, 5); // HH:MM
 
-      // 1. Exact Scheduled Time Match
       const exactTimeLead = leads.find((l) => {
         const status = l["Call_Status"] || "New";
         if (status === "Order Confirmed" || status === "Not Interested") return false;
@@ -216,13 +527,15 @@ export default function KhushaliCallerCRM() {
       });
 
       if (exactTimeLead) {
+        if (!smartPopupLead || smartPopupLead._uniqueKey !== exactTimeLead._uniqueKey) {
+          playNotificationChime();
+        }
         setSmartPopupLead(exactTimeLead);
         setShowSmartPopup(true);
         setIsPopupMinimized(false);
         return;
       }
 
-      // 2. Normal Pending/Overdue Call
       const pendingList = leads.filter((l) => {
         const status = l["Call_Status"] || "New";
         if (status === "Order Confirmed" || status === "Not Interested") return false;
@@ -239,31 +552,30 @@ export default function KhushaliCallerCRM() {
     checkScheduledAndUrgentCalls();
     const timer = setInterval(checkScheduledAndUrgentCalls, 15000);
     return () => clearInterval(timer);
-  }, [leads, loggedInCaller, todayDate, showSmartPopup]);
+  }, [leads, loggedInCaller, todayDate, showSmartPopup, smartPopupLead]);
 
   // SNOOZE ACTION: PUSH TO LAST ROW & MINIMIZE POPUP
   const handleSnooze = () => {
     if (!smartPopupLead) return;
     setLeads((prev) => {
-      const withoutCurrent = prev.filter((l) => l.rowIndex !== smartPopupLead.rowIndex);
+      const withoutCurrent = prev.filter((l) => l._uniqueKey !== smartPopupLead._uniqueKey);
       return [...withoutCurrent, smartPopupLead];
     });
     setIsPopupMinimized(true);
   };
 
-  // 🔥 CADENCE LOGIC: SAME DAY MULTIPLE CALLS PAR STAGE ADVANCE NAHI HOGA
+  // CADENCE LOGIC: SAME DAY MULTIPLE CALLS PAR STAGE ADVANCE NAHI HOGA
   const calculateNextFollowUp = (lead, forceSameDay = false) => {
     const currentStage = lead["Current_Stage"] || "Day 1";
     const lastCallDate = lead["Last_Call_Date"] ? String(lead["Last_Call_Date"]).split("T")[0] : "";
     const idx = FOLLOWUP_FLOW.findIndex((f) => f.stage === currentStage);
     const currentObj = idx !== -1 ? FOLLOWUP_FLOW[idx] : FOLLOWUP_FLOW[0];
 
-    // Check if customer was already spoken to today
     const isSameDayRepeat = forceSameDay || (lastCallDate === todayDate);
 
     if (isSameDayRepeat) {
       return {
-        nextStage: currentStage, // Stage change nahi hoga (Day 1 hi rahega)
+        nextStage: currentStage,
         nextDate: lead["Next_Call_Date"] ? String(lead["Next_Call_Date"]).split("T")[0] : todayDate,
         noteCol: currentObj.noteCol,
         isSameDayRepeat: true
@@ -288,9 +600,12 @@ export default function KhushaliCallerCRM() {
 
   const handleOpenUpdateModal = (lead) => {
     setActiveLeadModal(lead);
-    setCallStatusInput("Interested");
+    setCallStatusInput(lead["Call_Status"] === "Planning to Visit Office" ? "Planning to Visit Office" : "Interested");
+    setLeadPriorityInput(getLeadPriority(lead));
     setOrderAmountInput("");
     setOrderDetailsInput("");
+    setVisitDateInput(todayDate);
+    setVisitTimeInput("11:00");
     setCallNoteInput("");
     setCustomDateTimeEnabled(false);
     setCustomDateInput("");
@@ -303,14 +618,18 @@ export default function KhushaliCallerCRM() {
 
     try {
       const currentStage = activeLeadModal["Current_Stage"] || "Day 1";
-      const isSameDayForce = callStatusInput === "Same Day Follow-up";
+      const isSameDayForce = callStatusInput === "Same Day Follow-up" || callStatusInput === "Planning to Visit Office";
       const stepInfo = calculateNextFollowUp(activeLeadModal, isSameDayForce);
 
       let nextStageVal = stepInfo.nextStage;
       let nextDateVal = stepInfo.nextDate;
       let nextTimeVal = "";
 
-      if (customDateTimeEnabled && customDateInput) {
+      if (callStatusInput === "Planning to Visit Office") {
+        nextStageVal = currentStage;
+        nextDateVal = visitDateInput || todayDate;
+        nextTimeVal = visitTimeInput || "";
+      } else if (customDateTimeEnabled && customDateInput) {
         nextDateVal = customDateInput;
         nextTimeVal = customTimeInput || "";
       } else if (callStatusInput === "Same Day Follow-up" || stepInfo.isSameDayRepeat) {
@@ -327,16 +646,21 @@ export default function KhushaliCallerCRM() {
 
       const nowTime = new Date().toTimeString().slice(0, 5);
       const finalAmt = callStatusInput === "Order Confirmed" ? (parseFloat(orderAmountInput) || 0) : 0;
+      const priorityTag = leadPriorityInput === "HOT" ? "[🔥 HOT]" : leadPriorityInput === "COLD" ? "[🔵 COLD]" : "[🟡 WARM]";
       
-      const noteTimestamp = `[${todayDate} ${nowTime}]`;
+      const noteTimestamp = `[${todayDate} ${nowTime}] ${priorityTag}`;
       let finalRemark = "";
       if (callStatusInput === "Order Confirmed") {
         finalRemark = `${noteTimestamp} [ORDER: ₹${finalAmt}] ${orderDetailsInput} | Note: ${callNoteInput}`;
+      } else if (callStatusInput === "Planning to Visit Office") {
+        finalRemark = `${noteTimestamp} [🏢 OFFICE VISIT: ${nextDateVal}${nextTimeVal ? " @ " + nextTimeVal : ""}] ${callNoteInput}`;
       } else if (customTimeInput) {
         finalRemark = `${noteTimestamp} [Scheduled: ${nextDateVal} @ ${nextTimeVal}] ${callNoteInput}`;
       } else {
         finalRemark = `${noteTimestamp} ${callNoteInput}`;
       }
+
+      const targetSheetUrl = activeLeadModal._sheetUrl || loggedInCaller.sheetApiUrl;
 
       const payload = {
         action: "update_call",
@@ -351,38 +675,60 @@ export default function KhushaliCallerCRM() {
         note: finalRemark,
       };
 
-      await fetch(loggedInCaller.sheetApiUrl, {
+      await fetch(targetSheetUrl, {
         method: "POST",
         mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
 
-      setLeads((prev) =>
-        prev.map((item) =>
-          item.rowIndex === activeLeadModal.rowIndex
-            ? {
-                ...item,
-                Current_Stage: nextStageVal,
-                Next_Call_Date: nextDateVal,
-                Next_Call_Time: nextTimeVal,
-                Last_Call_Date: todayDate,
-                Call_Status: callStatusInput,
-                Order_Amount: finalAmt,
-                [stepInfo.noteCol]: item[stepInfo.noteCol] 
-                  ? `${item[stepInfo.noteCol]} | ${finalRemark}` 
-                  : finalRemark,
-              }
-            : item
-        )
+      const currentUniqueKey = activeLeadModal._uniqueKey;
+
+      const updatedLeads = leads.map((item) =>
+        item._uniqueKey === currentUniqueKey
+          ? {
+              ...item,
+              Current_Stage: nextStageVal,
+              Next_Call_Date: nextDateVal,
+              Next_Call_Time: nextTimeVal,
+              Last_Call_Date: todayDate,
+              Call_Status: callStatusInput,
+              Order_Amount: finalAmt,
+              [stepInfo.noteCol]: item[stepInfo.noteCol] 
+                ? `${item[stepInfo.noteCol]} | ${finalRemark}` 
+                : finalRemark,
+            }
+          : item
       );
 
+      setLeads(updatedLeads);
       setActiveLeadModal(null);
       setShowSmartPopup(false);
       setIsPopupMinimized(false);
       setCallNoteInput("");
       setOrderAmountInput("");
       setOrderDetailsInput("");
+
+      // ⚡ POWER AUTO-DIALER: Automatically open next due call if active
+      if (autoDialerActive) {
+        const nextDueLead = updatedLeads.find((l) => {
+          if (l._uniqueKey === currentUniqueKey) return false;
+          const st = l["Call_Status"] || "New";
+          if (st === "Order Confirmed" || st === "Not Interested") return false;
+          const nd = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
+          const lc = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
+          return (!nd || nd <= todayDate) && lc !== todayDate;
+        });
+
+        if (nextDueLead) {
+          setTimeout(() => {
+            handleOpenUpdateModal(nextDueLead);
+          }, 350);
+        } else {
+          setAutoDialerActive(false);
+          alert("🎉 Aaj ke sabhi due calls complete ho gaye! Auto-Dialer finished.");
+        }
+      }
     } catch (e) {
       alert("Sheet update karne mein dikkat aayi: " + e.message);
     } finally {
@@ -390,23 +736,33 @@ export default function KhushaliCallerCRM() {
     }
   };
 
-  // IN-APP NEW CUSTOMER SUBMIT (CRASH-PROOF & AUTO GOOGLE CONTACTS CX SYNC)
+  // IN-APP NEW CUSTOMER SUBMIT
   const handleAddNewCustomer = async (e) => {
     e.preventDefault();
     if (!loggedInCaller) return;
 
     try {
       setSaving(true);
-      const newRowIndex = leads.length > 0 ? Math.max(...leads.map(l => l.rowIndex || 0)) + 1 : 2;
+      const targetCallerObj = loggedInCaller.role === "admin" 
+        ? CALLER_PROFILES[newLeadForm.targetCaller || "piyush"] 
+        : loggedInCaller;
+
+      const callerLeads = leads.filter(l => l._callerId === targetCallerObj.id);
+      const newRowIndex = callerLeads.length > 0 ? Math.max(...callerLeads.map(l => Number(l.rowIndex) || 0)) + 1 : 2;
 
       const cleanName = String(newLeadForm.name || "").trim();
       const cleanNumber = String(newLeadForm.number || "").trim();
       const cleanCity = String(newLeadForm.city || "").trim();
       const cleanBudget = String(newLeadForm.budget || "").trim();
       const cleanChemicals = String(newLeadForm.chemicals || "").trim();
+      const priorityTag = newLeadForm.priority === "HOT" ? "[🔥 HOT]" : newLeadForm.priority === "COLD" ? "[🔵 COLD]" : "[🟡 WARM]";
 
       const newEntry = {
         rowIndex: newRowIndex,
+        _callerId: targetCallerObj.id,
+        _callerName: targetCallerObj.name,
+        _sheetUrl: targetCallerObj.sheetApiUrl,
+        _uniqueKey: `${targetCallerObj.id}_${newRowIndex}`,
         Timestamp: new Date().toISOString(),
         Day_1_Date: todayDate,
         Name: cleanName,
@@ -419,19 +775,19 @@ export default function KhushaliCallerCRM() {
         Next_Call_Date: todayDate,
         Next_Call_Time: "",
         Call_Status: "New",
-        Day_1_Note: newLeadForm.note ? `[${todayDate}] ${newLeadForm.note}` : ""
+        Day_1_Note: `[${todayDate}] ${priorityTag} ${newLeadForm.note || "Direct CRM Entry"}`
       };
 
-      await fetch(loggedInCaller.sheetApiUrl, {
+      await fetch(targetCallerObj.sheetApiUrl, {
         method: "POST",
         mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ action: "add_lead", ...newEntry }),
       });
 
       setLeads((prev) => [newEntry, ...prev]);
       setNewCustomerModalOpen(false);
-      setNewLeadForm({ name: "", number: "", city: "", budget: "", chemicals: "", note: "" });
+      setNewLeadForm({ name: "", number: "", city: "", budget: "", chemicals: "", priority: "HOT", note: "", targetCaller: "piyush" });
     } catch (err) {
       alert("Naya customer add karne me dikkat aayi: " + err.message);
     } finally {
@@ -439,10 +795,12 @@ export default function KhushaliCallerCRM() {
     }
   };
 
-  // IN-APP EDIT CUSTOMER INFO (CRASH-PROOF STRING HANDLING)
+  // IN-APP EDIT CUSTOMER INFO
   const handleOpenEditCustomer = (lead) => {
     setEditLeadForm({
       rowIndex: lead.rowIndex,
+      _uniqueKey: lead._uniqueKey,
+      _sheetUrl: lead._sheetUrl || loggedInCaller.sheetApiUrl,
       name: String(lead["Name"] || ""),
       number: String(lead["Number"] || lead["Contact Number"] || ""),
       city: String(lead["City"] || ""),
@@ -475,16 +833,16 @@ export default function KhushaliCallerCRM() {
         chemicals: cleanChemicals
       };
 
-      await fetch(loggedInCaller.sheetApiUrl, {
+      await fetch(editLeadForm._sheetUrl || loggedInCaller.sheetApiUrl, {
         method: "POST",
         mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
 
       setLeads((prev) =>
         prev.map((item) =>
-          item.rowIndex === editLeadForm.rowIndex
+          item._uniqueKey === editLeadForm._uniqueKey
             ? {
                 ...item,
                 Name: cleanName,
@@ -498,7 +856,7 @@ export default function KhushaliCallerCRM() {
         )
       );
 
-      if (historyModalLead && historyModalLead.rowIndex === editLeadForm.rowIndex) {
+      if (historyModalLead && historyModalLead._uniqueKey === editLeadForm._uniqueKey) {
         setHistoryModalLead((prev) => ({
           ...prev,
           Name: cleanName,
@@ -518,9 +876,19 @@ export default function KhushaliCallerCRM() {
     }
   };
 
-  // FILTERED LEADS FOR CURRENT TAB & SEARCH QUERY
+  const handleCopyText = (text, id) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1800);
+  };
+
+  // FILTERED LEADS FOR CURRENT TAB, CALLER FILTER & SEARCH QUERY
   const filteredLeads = useMemo(() => {
     return leads.filter((l) => {
+      if (loggedInCaller?.role === "admin" && adminCallerFilter !== "all") {
+        if (l._callerId !== adminCallerFilter) return false;
+      }
+
       const status = l["Call_Status"] || "New";
       const isClosed = status === "Order Confirmed" || status === "Not Interested";
       const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
@@ -533,6 +901,10 @@ export default function KhushaliCallerCRM() {
         matchesTab = lastCall === todayDate;
       } else if (activeFilter === "orders_today") {
         matchesTab = lastCall === todayDate && status === "Order Confirmed";
+      } else if (activeFilter === "office_visit") {
+        matchesTab = !isClosed && status === "Planning to Visit Office";
+      } else if (activeFilter === "hot_leads") {
+        matchesTab = !isClosed && getLeadPriority(l) === "HOT";
       } else if (activeFilter === "overdue") {
         matchesTab = !isClosed && nextDate && nextDate < todayDate;
       } else if (activeFilter === "upcoming") {
@@ -541,7 +913,6 @@ export default function KhushaliCallerCRM() {
 
       if (!matchesTab) return false;
 
-      // Smart Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const name = String(l["Name"] || "").toLowerCase();
@@ -553,21 +924,35 @@ export default function KhushaliCallerCRM() {
 
       return true;
     });
-  }, [leads, activeFilter, todayDate, searchQuery]);
+  }, [leads, activeFilter, todayDate, searchQuery, loggedInCaller, adminCallerFilter]);
+
+  // START POWER AUTO DIALER SESSION
+  const startAutoDialerSession = () => {
+    const firstDue = filteredLeads.find((l) => {
+      const st = l["Call_Status"] || "New";
+      return st !== "Order Confirmed" && st !== "Not Interested";
+    });
+    if (!firstDue) {
+      alert("Is list me koi pending lead nahi hai!");
+      return;
+    }
+    setAutoDialerActive(true);
+    handleOpenUpdateModal(firstDue);
+  };
 
   if (!loggedInCaller) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+        <div className="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
           <div className="text-center mb-6">
             <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-              Khushali Chemicals
+              Khushali Chemicals • 10L Sales Engine
             </span>
-            <h1 className="text-2xl font-extrabold text-white mt-3">Caller Login Portal</h1>
-            <p className="text-xs text-slate-400 mt-1">Apna Calling Profile chunein</p>
+            <h1 className="text-2xl font-extrabold text-white mt-3">CRM & Admin Login Portal</h1>
+            <p className="text-xs text-slate-400 mt-1">Apna Calling Profile ya Admin Dashboard chunein</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-3 gap-2.5 mb-6">
             {Object.values(CALLER_PROFILES).map((prof) => {
               const isSelected = selectedProfile === prof.id;
               return (
@@ -578,23 +963,29 @@ export default function KhushaliCallerCRM() {
                     setSelectedProfile(prof.id);
                     setLoginError("");
                   }}
-                  className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                  className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between ${
                     isSelected
-                      ? "bg-emerald-500/15 border-emerald-500 shadow-lg shadow-emerald-500/10"
+                      ? prof.role === "admin"
+                        ? "bg-amber-500/15 border-amber-500 shadow-lg shadow-amber-500/10"
+                        : "bg-emerald-500/15 border-emerald-500 shadow-lg shadow-emerald-500/10"
                       : "bg-slate-950/60 border-slate-800 opacity-70"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
-                      isSelected ? "bg-emerald-500 text-slate-950" : "bg-slate-800 text-slate-300"
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
+                      isSelected 
+                        ? prof.role === "admin" ? "bg-amber-500 text-slate-950" : "bg-emerald-500 text-slate-950" 
+                        : "bg-slate-800 text-slate-300"
                     }`}>
                       {prof.name[0]}
                     </div>
-                    {isSelected && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                    {isSelected && <CheckCircle2 className={`w-4 h-4 ${prof.role === "admin" ? "text-amber-400" : "text-emerald-400"}`} />}
                   </div>
                   <div>
-                    <div className="font-bold text-white text-base">{prof.name}</div>
-                    <div className="text-[10px] text-emerald-400 font-medium mt-0.5">{prof.whatsappLine}</div>
+                    <div className="font-bold text-white text-sm leading-tight">{prof.name}</div>
+                    <div className={`text-[10px] font-medium mt-0.5 ${prof.role === "admin" ? "text-amber-400" : "text-emerald-400"}`}>
+                      {prof.whatsappLine}
+                    </div>
                   </div>
                 </button>
               );
@@ -627,9 +1018,13 @@ export default function KhushaliCallerCRM() {
 
             <button
               type="submit"
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2"
+              className={`w-full font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 ${
+                selectedProfile === "admin"
+                  ? "bg-amber-500 hover:bg-amber-400 text-slate-950"
+                  : "bg-emerald-500 hover:bg-emerald-400 text-slate-950"
+              }`}
             >
-              Login to {CALLER_PROFILES[selectedProfile].name} CRM <ArrowRight className="w-4 h-4" />
+              Login to {CALLER_PROFILES[selectedProfile].name} <ArrowRight className="w-4 h-4" />
             </button>
           </form>
         </div>
@@ -641,45 +1036,72 @@ export default function KhushaliCallerCRM() {
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 space-y-6">
       
       {/* TOP HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-800">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-6 border-b border-slate-800">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
             <h1 className="text-xl md:text-2xl font-extrabold text-white">
-              {loggedInCaller.name.toUpperCase()} CRM PANEL
+              {loggedInCaller.name.toUpperCase()} {loggedInCaller.role === "admin" ? "MASTER LEADERBOARD" : "CRM PANEL"}
             </h1>
             <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full font-semibold">
               {loggedInCaller.whatsappLine}
             </span>
+            {autoDialerActive && (
+              <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1 animate-pulse">
+                <Zap className="w-3 h-3" /> Auto-Dialer Active
+              </span>
+            )}
           </div>
-          <p className="text-xs text-slate-400 mt-1">10 Lakh Target Engine • Auto Google Contacts 'CX' Sync</p>
+          <p className="text-xs text-slate-400 mt-1">
+            Khushali Chemicals (GST: 08PBDPS5444B1ZD) • Power Dialer, Objection Scripts & Live Catalog
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* ⚡ POWER AUTO-DIALER BUTTON */}
           <button
-            onClick={() => setNewCustomerModalOpen(true)}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md shadow-emerald-500/20"
+            onClick={() => {
+              if (autoDialerActive) setAutoDialerActive(false);
+              else startAutoDialerSession();
+            }}
+            className={`flex items-center gap-1.5 font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md ${
+              autoDialerActive
+                ? "bg-rose-500 text-white"
+                : "bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20"
+            }`}
           >
-            <PlusCircle className="w-4 h-4" /> Naya Customer Jodein
+            <Zap className="w-3.5 h-3.5" />
+            {autoDialerActive ? "Stop Auto-Dialer" : "Start Power Dialer"}
           </button>
 
-          {smartPopupLead && !showSmartPopup && (
-            <button
-              onClick={() => {
-                setShowSmartPopup(true);
-                setIsPopupMinimized(false);
-              }}
-              className="flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/40 text-amber-300 px-3 py-2 rounded-xl text-xs font-bold animate-pulse"
-            >
-              <BellRing className="w-3.5 h-3.5" /> Next Call Popup
-            </button>
-          )}
+          {/* 📖 PRICE LIST & FORMULATION GUIDE BUTTON */}
+          <button
+            onClick={() => setKnowledgeModalTab("catalog")}
+            className="flex items-center gap-1.5 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/40 text-indigo-300 px-3 py-2 rounded-xl text-xs font-bold transition"
+          >
+            <BookOpen className="w-3.5 h-3.5" /> Price & Formula
+          </button>
+
+          {/* 🛡️ OBJECTION HANDLING SCRIPTS BUTTON */}
+          <button
+            onClick={() => setKnowledgeModalTab("objections")}
+            className="flex items-center gap-1.5 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 px-3 py-2 rounded-xl text-xs font-bold transition"
+          >
+            <ShieldAlert className="w-3.5 h-3.5" /> 12 Objection Scripts
+          </button>
+
+          <button
+            onClick={() => setNewCustomerModalOpen(true)}
+            className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md shadow-emerald-500/20"
+          >
+            <PlusCircle className="w-4 h-4" /> Naya Customer
+          </button>
 
           <button
             onClick={fetchCallerSheet}
             className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-800 transition"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Sync Sheet
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Sync
           </button>
 
           <button
@@ -691,6 +1113,80 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
+      {/* 👑 ADMIN MASTER SIDE-BY-SIDE LEADERBOARD (PIYUSH VS GARV) */}
+      {loggedInCaller.role === "admin" && (
+        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/40 border border-amber-500/30 rounded-3xl p-5 space-y-4 shadow-2xl">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-amber-400" />
+              <h2 className="text-base font-black text-white uppercase tracking-wider">
+                Live Caller Performance Comparison (Piyush vs Garv)
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-semibold">Filter Caller Leads:</span>
+              {[
+                { id: "all", label: "Both Callers" },
+                { id: "piyush", label: "Only Piyush" },
+                { id: "garv", label: "Only Garv" }
+              ].map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setAdminCallerFilter(c.id)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                    adminCallerFilter === c.id
+                      ? "bg-amber-500 text-slate-950"
+                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { name: "Piyush (SIM 1)", stats: performanceStats.piyushStats, color: "emerald" },
+              { name: "Garv (SIM 2)", stats: performanceStats.garvStats, color: "sky" }
+            ].map((caller, idx) => (
+              <div key={idx} className="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="font-extrabold text-white text-sm">{caller.name}</span>
+                  <span className="text-xs font-bold text-amber-400">
+                    Sales Today: ₹{caller.stats.revenue.toLocaleString("en-IN")} / ₹13,500 ({caller.stats.revProgress}%)
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-2 text-center bg-slate-900 p-2.5 rounded-xl border border-slate-800/80">
+                  <div>
+                    <div className="text-[10px] text-slate-400">Calls Today</div>
+                    <div className="text-sm font-black text-white">{caller.stats.callsCount}/40</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400">Orders Won</div>
+                    <div className="text-sm font-black text-emerald-400">{caller.stats.ordersCount}/2</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400">Office Visits</div>
+                    <div className="text-sm font-black text-indigo-400">{caller.stats.officeVisits}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400">Overdue</div>
+                    <div className="text-sm font-black text-rose-400">{caller.stats.overdueCount}</div>
+                  </div>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${caller.stats.revProgress}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 🚀 LIVE DAILY SCORECARD */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
@@ -699,13 +1195,13 @@ export default function KhushaliCallerCRM() {
             <Phone className="w-4 h-4 text-sky-400" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-black text-white">{todayPerformance.callsCount}</span>
+            <span className="text-2xl font-black text-white">{performanceStats.overall.callsCount}</span>
             <span className="text-xs text-slate-500 font-medium"> / {loggedInCaller.dailyTargetCalls} Target</span>
           </div>
           <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
             <div 
               className="bg-sky-500 h-1.5 rounded-full transition-all duration-500" 
-              style={{ width: `${Math.min(100, (todayPerformance.callsCount / loggedInCaller.dailyTargetCalls) * 100)}%` }}
+              style={{ width: `${Math.min(100, (performanceStats.overall.callsCount / loggedInCaller.dailyTargetCalls) * 100)}%` }}
             />
           </div>
         </div>
@@ -716,13 +1212,13 @@ export default function KhushaliCallerCRM() {
             <Award className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-black text-emerald-400">{todayPerformance.ordersCount}</span>
+            <span className="text-2xl font-black text-emerald-400">{performanceStats.overall.ordersCount}</span>
             <span className="text-xs text-slate-500 font-medium"> / {loggedInCaller.dailyTargetOrders} Target</span>
           </div>
           <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
             <div 
               className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" 
-              style={{ width: `${Math.min(100, (todayPerformance.ordersCount / loggedInCaller.dailyTargetOrders) * 100)}%` }}
+              style={{ width: `${Math.min(100, (performanceStats.overall.ordersCount / loggedInCaller.dailyTargetOrders) * 100)}%` }}
             />
           </div>
         </div>
@@ -733,13 +1229,13 @@ export default function KhushaliCallerCRM() {
             <IndianRupee className="w-4 h-4 text-amber-400" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-black text-amber-400">₹{todayPerformance.revenue.toLocaleString('en-IN')}</span>
+            <span className="text-2xl font-black text-amber-400">₹{performanceStats.overall.revenue.toLocaleString('en-IN')}</span>
             <span className="text-xs text-slate-500 font-medium"> / ₹{loggedInCaller.dailyTargetRevenue.toLocaleString('en-IN')}</span>
           </div>
           <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
             <div 
               className="bg-amber-500 h-1.5 rounded-full transition-all duration-500" 
-              style={{ width: `${todayPerformance.revProgress}%` }}
+              style={{ width: `${performanceStats.overall.revProgress}%` }}
             />
           </div>
         </div>
@@ -750,11 +1246,11 @@ export default function KhushaliCallerCRM() {
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="my-1">
-            <div className="text-lg font-black text-white">{todayPerformance.revProgress}% Achieved</div>
+            <div className="text-lg font-black text-white">{performanceStats.overall.revProgress}% Achieved</div>
             <p className="text-[11px] text-slate-400">
-              {todayPerformance.revenue >= loggedInCaller.dailyTargetRevenue 
+              {performanceStats.overall.revenue >= loggedInCaller.dailyTargetRevenue 
                 ? "🎉 Target Complete! Bonus Achieved." 
-                : `₹${(loggedInCaller.dailyTargetRevenue - todayPerformance.revenue).toLocaleString('en-IN')} baaki hai`}
+                : `₹${(loggedInCaller.dailyTargetRevenue - performanceStats.overall.revenue).toLocaleString('en-IN')} baaki hai`}
             </p>
           </div>
           <div className="text-[10px] text-emerald-500/80 font-mono font-semibold uppercase">
@@ -795,6 +1291,8 @@ export default function KhushaliCallerCRM() {
       <div className="flex flex-wrap gap-2">
         {[
           { id: "today", label: `Aaj Ki Calls (Due Today)`, count: tabCounts.today, color: "text-emerald-400" },
+          { id: "hot_leads", label: `🔥 Hot Leads`, count: tabCounts.hotLeads, color: "text-rose-400" },
+          { id: "office_visit", label: `Office Visits 🏢`, count: tabCounts.officeVisit, color: "text-indigo-400" },
           { id: "called_today", label: `Aaj Hui Calls`, count: tabCounts.calledToday, color: "text-sky-400" },
           { id: "orders_today", label: `Aaj Ke Orders 🏆`, count: tabCounts.ordersToday, color: "text-amber-400" },
           { id: "overdue", label: `Overdue Calls`, count: tabCounts.overdue, color: "text-rose-400" },
@@ -804,7 +1302,7 @@ export default function KhushaliCallerCRM() {
           <button
             key={tab.id}
             onClick={() => setActiveFilter(tab.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
               activeFilter === tab.id
                 ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
                 : "bg-slate-900 text-slate-400 border border-slate-800 hover:text-white"
@@ -826,12 +1324,12 @@ export default function KhushaliCallerCRM() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-slate-900 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider">
-                <th className="p-3.5">Customer & Contact (Click Name for History)</th>
-                <th className="p-3.5">City & Requirement</th>
+                <th className="p-3.5">Customer & Priority (Click Name for History)</th>
+                <th className="p-3.5">City, Budget & Requirement</th>
                 <th className="p-3.5">Status / Stage</th>
                 <th className="p-3.5">Last Call</th>
-                <th className="p-3.5">Next Call & Time</th>
-                <th className="p-3.5 text-right">Action</th>
+                <th className="p-3.5">Next Call / Visit Time</th>
+                <th className="p-3.5 text-right">Quick Actions & Templates</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
@@ -845,23 +1343,34 @@ export default function KhushaliCallerCRM() {
                 filteredLeads.map((lead, index) => {
                   const stage = lead["Current_Stage"] || "Day 1";
                   const status = lead["Call_Status"] || "New";
+                  const priority = getLeadPriority(lead);
                   const nextDate = lead["Next_Call_Date"] ? String(lead["Next_Call_Date"]).split("T")[0] : "Today";
                   const nextTime = lead["Next_Call_Time"] || "";
                   const lastDate = lead["Last_Call_Date"] ? String(lead["Last_Call_Date"]).split("T")[0] : "—";
                   const phoneNum = lead["Number"] || lead["Contact Number"];
 
-                  const waText = encodeURIComponent(`Namaste ${lead["Name"] || ""} ji, Khushali Chemicals (Jaipur) se ${loggedInCaller.name} baat kar raha hoon. Aapki chemical concentrate requirement ke regarding quotation share kiya tha. Kripya batayein trial pack kab dispatch karwayein?`);
-
                   return (
-                    <tr key={index} className="hover:bg-slate-800/40 transition group">
+                    <tr key={lead._uniqueKey || index} className="hover:bg-slate-800/40 transition group">
                       <td className="p-3.5">
                         <div 
                           onClick={() => setHistoryModalLead(lead)} 
-                          className="font-bold text-white group-hover:text-emerald-400 transition cursor-pointer flex items-center gap-1.5"
+                          className="font-bold text-white group-hover:text-emerald-400 transition cursor-pointer flex items-center gap-1.5 flex-wrap"
                           title="Click to view complete discussion history & remarks"
                         >
                           <span className="underline decoration-dotted underline-offset-4">{lead["Name"] || "—"}</span>
                           <History className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 text-emerald-400" />
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase ${
+                            priority === "HOT" ? "bg-rose-500/20 text-rose-400 border border-rose-500/30" :
+                            priority === "COLD" ? "bg-blue-500/20 text-blue-400" :
+                            "bg-amber-500/20 text-amber-300"
+                          }`}>
+                            {priority === "HOT" ? "🔥 HOT" : priority}
+                          </span>
+                          {loggedInCaller.role === "admin" && (
+                            <span className="text-[9px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700">
+                              {lead._callerName}
+                            </span>
+                          )}
                           {status === "Order Confirmed" && (
                             <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-black">
                               ₹{lead["Order_Amount"] || ""}
@@ -871,22 +1380,32 @@ export default function KhushaliCallerCRM() {
                         <div className="text-xs text-emerald-400 font-mono mt-0.5">{phoneNum}</div>
                       </td>
                       <td className="p-3.5">
-                        <div className="text-slate-200 text-xs font-semibold">{lead["City"] || "—"}</div>
-                        <div className="text-[11px] text-slate-400 truncate max-w-xs">{lead["आपको कौन कौनसे chemical चाहिए?"] || "—"}</div>
+                        <div className="text-slate-200 text-xs font-semibold flex items-center gap-2">
+                          <span>{lead["City"] || "—"}</span>
+                          {lead["सर आपका बजट कितना है?"] && (
+                            <span className="text-[10px] text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded">
+                              Budget: ₹{lead["सर आपका बजट कितना है?"]}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 truncate max-w-xs mt-0.5">
+                          {lead["आपको कौन कौनसे chemical चाहिए?"] || "—"}
+                        </div>
                       </td>
                       <td className="p-3.5">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="bg-blue-500/15 text-blue-400 text-xs px-2 py-0.5 rounded font-mono font-bold">
                             {stage}
                           </span>
                           <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
                             status === "Order Confirmed" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
+                            status === "Planning to Visit Office" ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40" :
                             status === "Busy / Call Tomorrow" ? "bg-amber-500/20 text-amber-400" :
                             status === "Ringing / Not Picked" ? "bg-purple-500/20 text-purple-400" :
                             status === "Same Day Follow-up" ? "bg-sky-500/20 text-sky-400" :
                             "bg-slate-800 text-slate-300"
                           }`}>
-                            {status}
+                            {status === "Planning to Visit Office" ? "🏢 Office Visit" : status}
                           </span>
                         </div>
                       </td>
@@ -916,19 +1435,18 @@ export default function KhushaliCallerCRM() {
                         <a
                           href={`tel:${phoneNum}`}
                           className="inline-block p-1.5 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30 transition text-xs"
-                          title="Call"
+                          title="Call Now"
                         >
                           <Phone className="w-3.5 h-3.5" />
                         </a>
-                        <a
-                          href={`https://wa.me/91${phoneNum}?text=${waText}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-block p-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 transition text-xs"
-                          title="WhatsApp"
+                        {/* 📲 1-CLICK MULTI-TEMPLATE WHATSAPP BUTTON */}
+                        <button
+                          onClick={() => setWaTemplateModalLead(lead)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 transition text-xs font-bold"
+                          title="Send Sample Kit, Price List or Office Location on WhatsApp"
                         >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                        </a>
+                          <MessageSquare className="w-3.5 h-3.5" /> WA Templates
+                        </button>
                         <button
                           onClick={() => handleOpenUpdateModal(lead)}
                           className="bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-bold transition"
@@ -945,10 +1463,213 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
-      {/* 🔔 SMART CALL POPUP (SNOOZE TO LAST & SLEEK MINIMIZE BAR) */}
+      {/* 📲 1-CLICK WHATSAPP MULTI-TEMPLATE DRAWER MODAL */}
+      {waTemplateModalLead && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4">
+            <button onClick={() => setWaTemplateModalLead(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5" /> 1-Click WhatsApp Templates
+              </span>
+              <h3 className="text-xl font-black text-white mt-0.5">{waTemplateModalLead["Name"]}</h3>
+              <p className="text-xs text-slate-400 font-mono">{waTemplateModalLead["Number"] || waTemplateModalLead["Contact Number"]}</p>
+            </div>
+
+            <div className="space-y-2.5 max-h-[65vh] overflow-y-auto pr-1">
+              {[
+                {
+                  id: "sample_kit",
+                  title: "📦 Sample / Trial Kit Pitch (High Converting)",
+                  desc: "Ready-to-mix compound pitch + dilution ratios + trial kit dispatch offer",
+                  badge: "Best for New/Doubtful Leads"
+                },
+                {
+                  id: "price_list",
+                  title: "💰 Full Catalog Price List & Ratios (Per Kg Incl. GST)",
+                  desc: "All 12 products (5Kg / 25Kg / 50Kg slabs) + GST 08PBDPS5444B1ZD",
+                  badge: "Official Rate Card"
+                },
+                {
+                  id: "office_visit",
+                  title: "🏢 Jaipur Office Visit Invitation & Details",
+                  desc: "Scheduled date/time confirmation + Jaipur office address & contact",
+                  badge: "Office Visit"
+                },
+                {
+                  id: "trust_proof",
+                  title: "🛡️ Company Verification & Founder Story (@rohitsam.0)",
+                  desc: "20+ states supply proof, GST details & 1-compound technology trust builder",
+                  badge: "Overcome Trust Issue"
+                },
+                {
+                  id: "followup",
+                  title: "📞 Standard Follow-up & Order Dispatch Reminder",
+                  desc: "Quick polite follow-up for quotation shared earlier",
+                  badge: "Quick Reminder"
+                }
+              ].map((tpl) => {
+                const phone = String(waTemplateModalLead["Number"] || waTemplateModalLead["Contact Number"] || "").replace(/[^0-9]/g, "");
+                const msg = buildWhatsAppTemplate(tpl.id, waTemplateModalLead, loggedInCaller.name);
+                return (
+                  <div key={tpl.id} className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex flex-col gap-2 hover:border-emerald-500/40 transition">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <div className="text-xs font-extrabold text-white">{tpl.title}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">{tpl.desc}</div>
+                      </div>
+                      <span className="text-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold whitespace-nowrap">
+                        {tpl.badge}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        onClick={() => handleCopyText(msg, tpl.id)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center gap-1"
+                      >
+                        {copiedId === tpl.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        {copiedId === tpl.id ? "Copied" : "Copy Text"}
+                      </button>
+                      <a
+                        href={`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => setWaTemplateModalLead(null)}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black flex items-center gap-1.5 shadow-md shadow-emerald-500/20"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Send on WhatsApp
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📖 KNOWLEDGE BASE MODAL: PRICE CATALOG + 12 OBJECTION SCRIPTS */}
+      {knowledgeModalTab && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-6 relative shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <button onClick={() => setKnowledgeModalTab(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setKnowledgeModalTab("catalog")}
+                  className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition ${
+                    knowledgeModalTab === "catalog"
+                      ? "bg-indigo-500 text-white"
+                      : "bg-slate-950 text-slate-400 border border-slate-800"
+                  }`}
+                >
+                  <FlaskConical className="w-4 h-4" /> Price List & Formulation Ratios (12 Products)
+                </button>
+                <button
+                  onClick={() => setKnowledgeModalTab("objections")}
+                  className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition ${
+                    knowledgeModalTab === "objections"
+                      ? "bg-purple-500 text-white"
+                      : "bg-slate-950 text-slate-400 border border-slate-800"
+                  }`}
+                >
+                  <ShieldAlert className="w-4 h-4" /> 12 Objection Scripts & Closing Psychology
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto flex-1 pr-1 space-y-4">
+              {knowledgeModalTab === "catalog" ? (
+                <div className="space-y-4">
+                  <div className="bg-indigo-950/40 border border-indigo-500/30 p-3.5 rounded-2xl flex flex-wrap justify-between items-center gap-2 text-xs">
+                    <div>
+                      <span className="font-bold text-indigo-300">Khushali Chemicals Official Catalog:</span>{" "}
+                      <span className="text-slate-300">All rates are PER KG and INCLUDING 18% GST.</span>
+                    </div>
+                    <span className="font-mono text-emerald-400 font-bold">GST: 08PBDPS5444B1ZD | Contact: 8905878950</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {PRODUCT_CATALOG.map((prod, i) => (
+                      <div key={i} className="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl space-y-1.5">
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="font-extrabold text-white text-sm">{prod.name}</h4>
+                          <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-mono font-bold">
+                            {prod.ratio}
+                          </span>
+                        </div>
+                        <div className="text-xs font-mono text-amber-400 font-bold">{prod.slabs}</div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">{prod.instructions}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-amber-950/30 border border-amber-500/30 p-4 rounded-2xl space-y-1.5 text-xs">
+                    <div className="font-black text-amber-400 uppercase tracking-wider">⚠️ महत्वपूर्ण फॉर्मूलेशन सुझाव (Important Mixing Rules):</div>
+                    <p className="text-slate-300">• <b>नमक का उपयोग (Industrial Salt):</b> गाढ़ापन लाने के लिए नमक को हमेशा पहले पानी में पूरी तरह घोल लें, उसके बाद ही कंसन्ट्रेट डालें।</p>
+                    <p className="text-slate-300">• <b>विश्राम अवधि (24 Hours Resting):</b> हैंडवाश, डिशवॉश और फैब्रिक वॉश को बनाने के तुरंत बाद पैक न करें। कम से कम 24 घंटे स्थिर छोड़ दें ताकि झाग खत्म हो जाए और उत्पाद पारदर्शी (Clear) दिखे।</p>
+                    <p className="text-slate-300">• <b>ग्लास क्लीनर (0 TDS Water):</b> ग्लास क्लीनर के लिए सादा RO पानी उपयोग न करें (कांच पर निशान पड़ सकते हैं)। हमेशा 0 TDS वाला बैटरी/DM पानी ही लें।</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Caller Rules & Golden Lines */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="bg-rose-950/30 border border-rose-500/30 p-3.5 rounded-2xl text-xs space-y-1">
+                      <div className="font-black text-rose-400 uppercase">❌ कभी मत बोलो (Never Say):</div>
+                      <p className="text-slate-300">• "Sir Buy कर लो" / "Offer खत्म हो जाएगा"</p>
+                      <p className="text-slate-300">• "जल्दी Decision लो" / "Trust कर लो"</p>
+                      <div className="font-black text-emerald-400 uppercase pt-2">✅ हमेशा बोलो (Always Say):</div>
+                      <p className="text-slate-300">• "आपकी बात बिल्कुल सही है। अगर मैं आपकी जगह होता तो शायद मैं भी यही सोचता।"</p>
+                      <p className="text-slate-300">• "मैं आपको convince नहीं, clarify करना चाहता हूँ।"</p>
+                    </div>
+                    <div className="bg-amber-950/30 border border-amber-500/30 p-3.5 rounded-2xl text-xs space-y-1">
+                      <div className="font-black text-amber-400 uppercase">🏆 5 Golden Closing Lines:</div>
+                      {GOLDEN_CLOSING_LINES.map((line, idx) => (
+                        <p key={idx} className="text-slate-200 font-medium">• "{line}"</p>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 12 Objections Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {OBJECTION_SCRIPTS.map((obj) => (
+                      <div key={obj.id} className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-black text-purple-400">{obj.title}</span>
+                          <button
+                            onClick={() => handleCopyText(obj.reply, `obj_${obj.id}`)}
+                            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded flex items-center gap-1"
+                          >
+                            {copiedId === `obj_${obj.id}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                            Copy
+                          </button>
+                        </div>
+                        <div className="text-[11px] text-rose-300 bg-rose-950/30 px-2.5 py-1 rounded-lg border border-rose-800/30">
+                          <b>Customer:</b> "{obj.customer}"
+                        </div>
+                        <p className="text-xs text-emerald-300 leading-relaxed font-medium">
+                          <b>Caller Reply:</b> "{obj.reply}"
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SMART CALL POPUP (SNOOZE TO LAST & SLEEK MINIMIZE BAR) */}
       {showSmartPopup && smartPopupLead && !activeLeadModal && !historyModalLead && (
         isPopupMinimized ? (
-          // MINIMIZED FLOATING BAR
           <div
             onClick={() => setIsPopupMinimized(false)}
             className="fixed bottom-5 right-5 bg-slate-900/95 border-2 border-emerald-500/80 rounded-2xl px-4 py-3 shadow-2xl z-40 flex items-center gap-3 cursor-pointer hover:bg-slate-800 hover:border-emerald-400 transition animate-pulse"
@@ -988,25 +1709,28 @@ export default function KhushaliCallerCRM() {
             </button>
           </div>
         ) : (
-          // EXPANDED POPUP WINDOW
           <div className="fixed bottom-5 right-5 left-5 md:left-auto md:w-[440px] bg-slate-900 border-2 border-emerald-500 rounded-3xl p-5 shadow-2xl z-40 animate-fade-in">
             <div className="flex justify-between items-center mb-3">
-              <span className="bg-emerald-500 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
+              <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase flex items-center gap-1 ${
+                smartPopupLead["Call_Status"] === "Planning to Visit Office"
+                  ? "bg-indigo-500 text-white"
+                  : "bg-emerald-500 text-slate-950"
+              }`}>
                 <BellRing className="w-3 h-3" /> 
-                {smartPopupLead["Next_Call_Time"] ? `Alarm: ${smartPopupLead["Next_Call_Time"]}` : "Next Due Call"}
+                {smartPopupLead["Call_Status"] === "Planning to Visit Office"
+                  ? `🏢 Office Visit Follow-up${smartPopupLead["Next_Call_Time"] ? " @ " + smartPopupLead["Next_Call_Time"] : ""}`
+                  : smartPopupLead["Next_Call_Time"] ? `Alarm: ${smartPopupLead["Next_Call_Time"]}` : "Next Due Call"}
               </span>
               <div className="flex items-center gap-1.5">
                 <button 
                   onClick={() => setIsPopupMinimized(true)} 
                   className="text-slate-300 hover:text-white text-xs bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
-                  title="Window minimize karein"
                 >
                   <Minimize2 className="w-3 h-3" /> Minimize
                 </button>
                 <button 
                   onClick={handleSnooze} 
                   className="text-amber-400 hover:text-amber-300 text-xs bg-amber-950/60 border border-amber-800/60 px-2.5 py-1 rounded-lg font-bold transition"
-                  title="Number list ke last me bhejo aur window minimize karo"
                 >
                   Snooze (Last me bhejo)
                 </button>
@@ -1031,14 +1755,12 @@ export default function KhushaliCallerCRM() {
               >
                 <Phone className="w-3.5 h-3.5" /> Call
               </a>
-              <a
-                href={`https://wa.me/91${smartPopupLead["Number"] || smartPopupLead["Contact Number"]}?text=${encodeURIComponent(`Namaste ${smartPopupLead["Name"] || ""} ji, Khushali Chemicals se ${loggedInCaller.name} baat kar raha hoon...`)}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-center gap-1.5 bg-emerald-950 border border-emerald-700 text-emerald-300 py-2.5 rounded-xl text-xs"
+              <button
+                onClick={() => setWaTemplateModalLead(smartPopupLead)}
+                className="flex items-center justify-center gap-1.5 bg-emerald-950 border border-emerald-700 text-emerald-300 py-2.5 rounded-xl text-xs font-bold"
               >
-                <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
-              </a>
+                <MessageSquare className="w-3.5 h-3.5" /> WA Pitch
+              </button>
               <button
                 onClick={() => handleOpenUpdateModal(smartPopupLead)}
                 className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs border border-slate-700"
@@ -1050,7 +1772,7 @@ export default function KhushaliCallerCRM() {
         )
       )}
 
-      {/* 📝 REMARKS & TIMELINE DISCUSSION HISTORY MODAL */}
+      {/* REMARKS & TIMELINE DISCUSSION HISTORY MODAL */}
       {historyModalLead && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -1124,123 +1846,257 @@ export default function KhushaliCallerCRM() {
         </div>
       )}
 
-      {/* ⏰ UPDATE CALL MODAL WITH STAGE PROTECTION & TIME PICKER */}
+      {/* ⏰ UPDATE CALL MODAL WITH BUILT-IN OBJECTION & PRICE ASSISTANT */}
       {activeLeadModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-6 relative shadow-2xl max-h-[92vh] overflow-y-auto">
             <button onClick={() => setActiveLeadModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
 
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Call Logging</span>
-              <h3 className="text-xl font-black text-white">{activeLeadModal["Name"]}</h3>
-              <p className="text-xs text-slate-400 font-mono mt-0.5">{activeLeadModal["Number"] || activeLeadModal["Contact Number"]}</p>
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* LEFT COLUMN: CALL OUTCOME LOGGING */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                      {autoDialerActive ? "⚡ Power Auto-Dialer Session" : "Call Logging"}
+                    </span>
+                    <h3 className="text-xl font-black text-white">{activeLeadModal["Name"]}</h3>
+                    <p className="text-xs text-slate-400 font-mono mt-0.5">
+                      {activeLeadModal["Number"] || activeLeadModal["Contact Number"]} • {activeLeadModal["City"] || "India"}
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <a
+                      href={`tel:${activeLeadModal["Number"] || activeLeadModal["Contact Number"]}`}
+                      className="px-3 py-2 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs flex items-center gap-1"
+                    >
+                      <Phone className="w-3.5 h-3.5" /> Dial
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setWaTemplateModalLead(activeLeadModal)}
+                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs border border-slate-700 flex items-center gap-1"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" /> Templates
+                    </button>
+                  </div>
+                </div>
 
-            <div className="space-y-3.5">
-              <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">Call Outcome / Status *</label>
-                <select
-                  value={callStatusInput}
-                  onChange={(e) => setCallStatusInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-medium"
-                >
-                  <option value="Interested">Connected - Interested (Cadence Flow)</option>
-                  <option value="Same Day Follow-up">Connected - Same Day Follow-up (Keep Current Stage)</option>
-                  <option value="Busy / Call Tomorrow">Connected - Busy / Call Tomorrow</option>
-                  <option value="Ringing / Not Picked">Ringing / Phone Nahi Uthaya</option>
-                  <option value="Order Confirmed">🎉 Order Confirmed (Booking)</option>
-                  <option value="Not Interested">Not Interested / Closed</option>
-                </select>
-              </div>
+                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs flex flex-wrap justify-between gap-2">
+                  <div><span className="text-slate-500">Requirement:</span> <span className="text-emerald-400 font-bold">{activeLeadModal["आपको कौन कौनसे chemical चाहिए?"] || "—"}</span></div>
+                  <div><span className="text-slate-500">Budget:</span> <span className="text-amber-400 font-bold">₹{activeLeadModal["सर आपका बजट कितना है?"] || "—"}</span></div>
+                </div>
 
-              {callStatusInput !== "Order Confirmed" && callStatusInput !== "Not Interested" && (
-                <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={customDateTimeEnabled}
-                      onChange={(e) => setCustomDateTimeEnabled(e.target.checked)}
-                      className="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700 focus:ring-0"
-                    />
-                    <span>Schedule Custom Next Call Date & Time</span>
-                  </label>
+                {/* PRIORITY SELECTOR (HOT / WARM / COLD) */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-400 block mb-1.5">Lead Priority Tag</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: "HOT", label: "🔥 HOT (High Intent)", activeCls: "bg-rose-500/20 border-rose-500 text-rose-300" },
+                      { id: "WARM", label: "🟡 WARM (Follow-up)", activeCls: "bg-amber-500/20 border-amber-500 text-amber-300" },
+                      { id: "COLD", label: "🔵 COLD (Low Priority)", activeCls: "bg-blue-500/20 border-blue-500 text-blue-300" },
+                    ].map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setLeadPriorityInput(p.id)}
+                        className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition ${
+                          leadPriorityInput === p.id
+                            ? p.activeCls
+                            : "bg-slate-950 border-slate-800 text-slate-400"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                  {customDateTimeEnabled && (
-                    <div className="grid grid-cols-2 gap-2 pt-1 animate-fade-in">
+                <div>
+                  <label className="text-xs font-semibold text-slate-400 block mb-1">Call Outcome / Status *</label>
+                  <select
+                    value={callStatusInput}
+                    onChange={(e) => setCallStatusInput(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-medium"
+                  >
+                    <option value="Interested">Connected - Interested (Cadence Flow)</option>
+                    <option value="Planning to Visit Office">🏢 Planning to Visit Office</option>
+                    <option value="Same Day Follow-up">Connected - Same Day Follow-up (Keep Current Stage)</option>
+                    <option value="Busy / Call Tomorrow">Connected - Busy / Call Tomorrow</option>
+                    <option value="Ringing / Not Picked">Ringing / Phone Nahi Uthaya</option>
+                    <option value="Order Confirmed">🎉 Order Confirmed (Booking)</option>
+                    <option value="Not Interested">Not Interested / Closed</option>
+                  </select>
+                </div>
+
+                {callStatusInput === "Planning to Visit Office" && (
+                  <div className="p-3.5 bg-indigo-950/40 border border-indigo-500/40 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-300">
+                      <Building2 className="w-4 h-4 text-indigo-400" />
+                      <span>Office Visit Date & Reminder Time</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <span className="text-[10px] font-semibold text-slate-400 block mb-1">Next Date *</span>
+                        <span className="text-[10px] font-semibold text-slate-300 block mb-1">Visit Date *</span>
                         <input
                           type="date"
                           required
-                          value={customDateInput}
-                          onChange={(e) => setCustomDateInput(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-white focus:outline-none"
+                          value={visitDateInput}
+                          onChange={(e) => setVisitDateInput(e.target.value)}
+                          className="w-full bg-slate-950 border border-indigo-500/40 rounded-xl p-2 text-xs text-white"
                         />
                       </div>
                       <div>
-                        <span className="text-[10px] font-semibold text-slate-400 block mb-1">Exact Time (Popup Alert)</span>
+                        <span className="text-[10px] font-semibold text-slate-300 block mb-1">Reminder Time</span>
                         <input
                           type="time"
-                          value={customTimeInput}
-                          onChange={(e) => setCustomTimeInput(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-emerald-400 font-mono focus:outline-none"
+                          value={visitTimeInput}
+                          onChange={(e) => setVisitTimeInput(e.target.value)}
+                          className="w-full bg-slate-950 border border-indigo-500/40 rounded-xl p-2 text-xs text-indigo-300 font-mono"
                         />
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {callStatusInput === "Order Confirmed" && (
-                <div className="p-3.5 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl space-y-3 animate-fade-in">
-                  <div>
-                    <label className="text-[11px] font-bold text-emerald-400 block mb-1">
-                      Order Amount (₹) *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="e.g. 8500"
-                      value={orderAmountInput}
-                      onChange={(e) => setOrderAmountInput(e.target.value)}
-                      className="w-full bg-slate-950 border border-emerald-500/60 rounded-xl px-3 py-2 text-sm text-emerald-300 font-black focus:outline-none"
-                    />
                   </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-300 block mb-1">
-                      Ordered Products / Quantity (Kg)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 50kg Phenyl + 20kg Handwash"
-                      value={orderDetailsInput}
-                      onChange={(e) => setOrderDetailsInput(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-              )}
+                )}
 
-              <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">Baat-cheet ka Remark / Notes</label>
-                <textarea
-                  rows={3}
-                  value={callNoteInput}
-                  onChange={(e) => setCallNoteInput(e.target.value)}
-                  placeholder="Customer ne kya kaha? Rate issue tha ya sample manga..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500"
-                />
+                {callStatusInput !== "Order Confirmed" && callStatusInput !== "Not Interested" && callStatusInput !== "Planning to Visit Office" && (
+                  <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={customDateTimeEnabled}
+                        onChange={(e) => setCustomDateTimeEnabled(e.target.checked)}
+                        className="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700"
+                      />
+                      <span>Schedule Custom Next Call Date & Time</span>
+                    </label>
+
+                    {customDateTimeEnabled && (
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                          <span className="text-[10px] font-semibold text-slate-400 block mb-1">Next Date *</span>
+                          <input
+                            type="date"
+                            required
+                            value={customDateInput}
+                            onChange={(e) => setCustomDateInput(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-semibold text-slate-400 block mb-1">Exact Time (Popup Alert)</span>
+                          <input
+                            type="time"
+                            value={customTimeInput}
+                            onChange={(e) => setCustomTimeInput(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-emerald-400 font-mono"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {callStatusInput === "Order Confirmed" && (
+                  <div className="p-3.5 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl space-y-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-emerald-400 block mb-1">Order Amount (₹) *</label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="e.g. 8500"
+                        value={orderAmountInput}
+                        onChange={(e) => setOrderAmountInput(e.target.value)}
+                        className="w-full bg-slate-950 border border-emerald-500/60 rounded-xl px-3 py-2 text-sm text-emerald-300 font-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-300 block mb-1">Ordered Products / Quantity (Kg)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 50kg White Phenyl + 25kg Handwash"
+                        value={orderDetailsInput}
+                        onChange={(e) => setOrderDetailsInput(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-400 block mb-1">Baat-cheet ka Remark / Notes</label>
+                  <textarea
+                    rows={3}
+                    value={callNoteInput}
+                    onChange={(e) => setCallNoteInput(e.target.value)}
+                    placeholder="Customer ne kya kaha? Sample kit bhejna hai ya rate discuss hua..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <button
+                  disabled={saving}
+                  onClick={handleSaveFollowUp}
+                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                >
+                  {saving
+                    ? "Saving to Sheet..."
+                    : autoDialerActive
+                    ? "Save & Load Next Call ⚡"
+                    : "Save Call & Schedule"}
+                </button>
               </div>
 
-              <button
-                disabled={saving}
-                onClick={handleSaveFollowUp}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
-              >
-                {saving ? "Saving to Sheet..." : "Save Call & Schedule"}
-              </button>
+              {/* RIGHT COLUMN: LIVE IN-CALL OBJECTION & PRICE PITCH ASSISTANT */}
+              <div className="lg:col-span-5 bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col max-h-[75vh]">
+                <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                  <span className="text-xs font-black uppercase text-amber-400">Live Pitch Assistant</span>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setModalHelperTab("objections")}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                        modalHelperTab !== "catalog" ? "bg-purple-500 text-white" : "bg-slate-900 text-slate-400"
+                      }`}
+                    >
+                      Objections (12)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalHelperTab("catalog")}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                        modalHelperTab === "catalog" ? "bg-indigo-500 text-white" : "bg-slate-900 text-slate-400"
+                      }`}
+                    >
+                      Rates & Ratios
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-y-auto flex-1 space-y-2.5 pt-3 pr-1">
+                  {modalHelperTab === "catalog" ? (
+                    PRODUCT_CATALOG.map((p, idx) => (
+                      <div key={idx} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-white">{p.name}</span>
+                          <span className="text-[10px] text-emerald-400 font-mono">{p.ratio}</span>
+                        </div>
+                        <div className="text-[11px] text-amber-400 font-mono font-bold">{p.slabs}</div>
+                        <div className="text-[10px] text-slate-400">{p.instructions}</div>
+                      </div>
+                    ))
+                  ) : (
+                    OBJECTION_SCRIPTS.map((obj) => (
+                      <div key={obj.id} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+                        <div className="text-xs font-bold text-purple-300">{obj.title}</div>
+                        <p className="text-[11px] text-slate-200 leading-relaxed">"{obj.reply}"</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1263,6 +2119,20 @@ export default function KhushaliCallerCRM() {
             </div>
 
             <form onSubmit={handleAddNewCustomer} className="space-y-3">
+              {loggedInCaller.role === "admin" && (
+                <div>
+                  <label className="text-xs font-semibold text-amber-400 block mb-1">Assign Lead to Caller *</label>
+                  <select
+                    value={newLeadForm.targetCaller}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, targetCaller: e.target.value })}
+                    className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-white"
+                  >
+                    <option value="piyush">Piyush (SIM 1 Sheet)</option>
+                    <option value="garv">Garv (SIM 2 Sheet)</option>
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1">Customer Name *</label>
                 <input
@@ -1275,16 +2145,30 @@ export default function KhushaliCallerCRM() {
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">Mobile Number (10 Digits) *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. 9876543210"
-                  value={newLeadForm.number}
-                  onChange={(e) => setNewLeadForm({ ...newLeadForm, number: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-emerald-400 font-mono focus:outline-none focus:border-emerald-500"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Mobile Number *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 9876543210"
+                    value={newLeadForm.number}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, number: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-emerald-400 font-mono focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Priority</label>
+                  <select
+                    value={newLeadForm.priority}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, priority: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
+                  >
+                    <option value="HOT">🔥 HOT</option>
+                    <option value="WARM">🟡 WARM</option>
+                    <option value="COLD">🔵 COLD</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -1302,7 +2186,7 @@ export default function KhushaliCallerCRM() {
                   <label className="text-xs font-semibold text-slate-300 block mb-1">Budget (₹)</label>
                   <input
                     type="text"
-                    placeholder="e.g. 10000"
+                    placeholder="e.g. 15000"
                     value={newLeadForm.budget}
                     onChange={(e) => setNewLeadForm({ ...newLeadForm, budget: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
