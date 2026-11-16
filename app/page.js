@@ -5,7 +5,7 @@ import {
   X, BellRing, PlusCircle, CheckCircle2, ArrowRight,
   TrendingUp, Award, IndianRupee, CalendarCheck, Clock,
   Calendar, Edit3, History, Maximize2, Minimize2, Search, 
-  Contact, Building2, Zap, BookOpen, ShieldAlert, Flame, 
+  Contact, Building2, Zap, BookOpen, ShieldAlert, 
   Users, Copy, Check, Sparkles, FlaskConical
 } from "lucide-react";
 
@@ -56,7 +56,7 @@ const CALLER_PROFILES = {
   }
 };
 
-// 📚 OFFICIAL KHUSHALI CHEMICALS CATALOG & FORMULATION DATA (From PDF)
+// 📚 OFFICIAL KHUSHALI CHEMICALS CATALOG & FORMULATION DATA
 const PRODUCT_CATALOG = [
   {
     name: "White Phenyl Raw Material",
@@ -132,7 +132,7 @@ const PRODUCT_CATALOG = [
   }
 ];
 
-// 🛡️ OFFICIAL 12 OBJECTION HANDLING SCRIPTS (From PDF)
+// 🛡️ OFFICIAL 12 OBJECTION HANDLING SCRIPTS
 const OBJECTION_SCRIPTS = [
   {
     id: 1,
@@ -301,7 +301,7 @@ export default function KhushaliCallerCRM() {
   const [customDateTimeEnabled, setCustomDateTimeEnabled] = useState(false);
   const [customDateInput, setCustomDateInput] = useState("");
   const [customTimeInput, setCustomTimeInput] = useState("");
-  const [modalHelperTab, setModalHelperTab] = useState("none"); // 'none' | 'objections' | 'catalog'
+  const [modalHelperTab, setModalHelperTab] = useState("history"); // 'history' | 'objections' | 'catalog'
   const [saving, setSaving] = useState(false);
 
   // New Customer Form State
@@ -319,7 +319,6 @@ export default function KhushaliCallerCRM() {
   // Edit Customer Form State
   const [editLeadForm, setEditLeadForm] = useState({
     rowIndex: null,
-    callerOwner: "piyush",
     name: "",
     number: "",
     city: "",
@@ -369,6 +368,21 @@ export default function KhushaliCallerCRM() {
     const budgetNum = parseFloat(String(lead["सर आपका बजट कितना है?"] || "").replace(/[^0-9]/g, "")) || 0;
     if (budgetNum >= 15000) return "HOT";
     return "WARM";
+  };
+
+  // Helper to count existing remarks for a lead
+  const getLeadRemarksList = (lead) => {
+    if (!lead) return [];
+    const list = [];
+    FOLLOWUP_FLOW.forEach((f) => {
+      if (lead[f.noteCol] && String(lead[f.noteCol]).trim() !== "") {
+        list.push({
+          stage: f.stage,
+          note: String(lead[f.noteCol]).trim()
+        });
+      }
+    });
+    return list;
   };
 
   // FETCH SINGLE CALLER OR BOTH CALLERS (FOR ADMIN)
@@ -472,7 +486,7 @@ export default function KhushaliCallerCRM() {
     return { overall, piyushStats, garvStats };
   }, [leads, todayDate, loggedInCaller]);
 
-  // ALL TABS LIVE BADGE COUNTS
+  // ALL TABS LIVE BADGE COUNTS (INCLUDING OFFICE VISITS)
   const tabCounts = useMemo(() => {
     let today = 0;
     let calledToday = 0;
@@ -610,6 +624,10 @@ export default function KhushaliCallerCRM() {
     setCustomDateTimeEnabled(false);
     setCustomDateInput("");
     setCustomTimeInput("");
+
+    // Agar customer ke puraane remarks hain, toh Power Dialer / Pitch Assistant me pehle Remarks tab dikhao!
+    const existingRemarks = getLeadRemarksList(lead);
+    setModalHelperTab(existingRemarks.length > 0 ? "history" : "objections");
   };
 
   const handleSaveFollowUp = async () => {
@@ -1147,8 +1165,8 @@ export default function KhushaliCallerCRM() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
-              { name: "Piyush (SIM 1)", stats: performanceStats.piyushStats, color: "emerald" },
-              { name: "Garv (SIM 2)", stats: performanceStats.garvStats, color: "sky" }
+              { name: "Piyush (SIM 1)", stats: performanceStats.piyushStats },
+              { name: "Garv (SIM 2)", stats: performanceStats.garvStats }
             ].map((caller, idx) => (
               <div key={idx} className="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 space-y-3">
                 <div className="flex justify-between items-center">
@@ -1846,261 +1864,329 @@ export default function KhushaliCallerCRM() {
         </div>
       )}
 
-      {/* ⏰ UPDATE CALL MODAL WITH BUILT-IN OBJECTION & PRICE ASSISTANT */}
-      {activeLeadModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-6 relative shadow-2xl max-h-[92vh] overflow-y-auto">
-            <button onClick={() => setActiveLeadModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
-              <X className="w-5 h-5" />
-            </button>
+      {/* ⏰ UPDATE CALL MODAL (POWER DIALER) WITH PAST REMARKS + OBJECTIONS + RATES ASSISTANT */}
+      {activeLeadModal && (() => {
+        const customerPastRemarks = getLeadRemarksList(activeLeadModal);
+        return (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-5xl w-full p-6 relative shadow-2xl max-h-[92vh] overflow-y-auto">
+              <button onClick={() => setActiveLeadModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* LEFT COLUMN: CALL OUTCOME LOGGING */}
-              <div className="lg:col-span-7 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                      {autoDialerActive ? "⚡ Power Auto-Dialer Session" : "Call Logging"}
-                    </span>
-                    <h3 className="text-xl font-black text-white">{activeLeadModal["Name"]}</h3>
-                    <p className="text-xs text-slate-400 font-mono mt-0.5">
-                      {activeLeadModal["Number"] || activeLeadModal["Contact Number"]} • {activeLeadModal["City"] || "India"}
-                    </p>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <a
-                      href={`tel:${activeLeadModal["Number"] || activeLeadModal["Contact Number"]}`}
-                      className="px-3 py-2 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs flex items-center gap-1"
-                    >
-                      <Phone className="w-3.5 h-3.5" /> Dial
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => setWaTemplateModalLead(activeLeadModal)}
-                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs border border-slate-700 flex items-center gap-1"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" /> Templates
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs flex flex-wrap justify-between gap-2">
-                  <div><span className="text-slate-500">Requirement:</span> <span className="text-emerald-400 font-bold">{activeLeadModal["आपको कौन कौनसे chemical चाहिए?"] || "—"}</span></div>
-                  <div><span className="text-slate-500">Budget:</span> <span className="text-amber-400 font-bold">₹{activeLeadModal["सर आपका बजट कितना है?"] || "—"}</span></div>
-                </div>
-
-                {/* PRIORITY SELECTOR (HOT / WARM / COLD) */}
-                <div>
-                  <label className="text-xs font-semibold text-slate-400 block mb-1.5">Lead Priority Tag</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { id: "HOT", label: "🔥 HOT (High Intent)", activeCls: "bg-rose-500/20 border-rose-500 text-rose-300" },
-                      { id: "WARM", label: "🟡 WARM (Follow-up)", activeCls: "bg-amber-500/20 border-amber-500 text-amber-300" },
-                      { id: "COLD", label: "🔵 COLD (Low Priority)", activeCls: "bg-blue-500/20 border-blue-500 text-blue-300" },
-                    ].map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setLeadPriorityInput(p.id)}
-                        className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition ${
-                          leadPriorityInput === p.id
-                            ? p.activeCls
-                            : "bg-slate-950 border-slate-800 text-slate-400"
-                        }`}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* LEFT COLUMN: CALL OUTCOME LOGGING */}
+                <div className="lg:col-span-6 space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        {autoDialerActive ? "⚡ Power Auto-Dialer Session" : "Call Logging"}
+                      </span>
+                      <h3 className="text-xl font-black text-white">{activeLeadModal["Name"]}</h3>
+                      <p className="text-xs text-slate-400 font-mono mt-0.5">
+                        {activeLeadModal["Number"] || activeLeadModal["Contact Number"]} • {activeLeadModal["City"] || "India"}
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <a
+                        href={`tel:${activeLeadModal["Number"] || activeLeadModal["Contact Number"]}`}
+                        className="px-3 py-2 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs flex items-center gap-1"
                       >
-                        {p.label}
+                        <Phone className="w-3.5 h-3.5" /> Dial
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setWaTemplateModalLead(activeLeadModal)}
+                        className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs border border-slate-700 flex items-center gap-1"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Templates
                       </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-400 block mb-1">Call Outcome / Status *</label>
-                  <select
-                    value={callStatusInput}
-                    onChange={(e) => setCallStatusInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-medium"
-                  >
-                    <option value="Interested">Connected - Interested (Cadence Flow)</option>
-                    <option value="Planning to Visit Office">🏢 Planning to Visit Office</option>
-                    <option value="Same Day Follow-up">Connected - Same Day Follow-up (Keep Current Stage)</option>
-                    <option value="Busy / Call Tomorrow">Connected - Busy / Call Tomorrow</option>
-                    <option value="Ringing / Not Picked">Ringing / Phone Nahi Uthaya</option>
-                    <option value="Order Confirmed">🎉 Order Confirmed (Booking)</option>
-                    <option value="Not Interested">Not Interested / Closed</option>
-                  </select>
-                </div>
-
-                {callStatusInput === "Planning to Visit Office" && (
-                  <div className="p-3.5 bg-indigo-950/40 border border-indigo-500/40 rounded-2xl space-y-3">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-300">
-                      <Building2 className="w-4 h-4 text-indigo-400" />
-                      <span>Office Visit Date & Reminder Time</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-300 block mb-1">Visit Date *</span>
-                        <input
-                          type="date"
-                          required
-                          value={visitDateInput}
-                          onChange={(e) => setVisitDateInput(e.target.value)}
-                          className="w-full bg-slate-950 border border-indigo-500/40 rounded-xl p-2 text-xs text-white"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-semibold text-slate-300 block mb-1">Reminder Time</span>
-                        <input
-                          type="time"
-                          value={visitTimeInput}
-                          onChange={(e) => setVisitTimeInput(e.target.value)}
-                          className="w-full bg-slate-950 border border-indigo-500/40 rounded-xl p-2 text-xs text-indigo-300 font-mono"
-                        />
-                      </div>
                     </div>
                   </div>
-                )}
 
-                {callStatusInput !== "Order Confirmed" && callStatusInput !== "Not Interested" && callStatusInput !== "Planning to Visit Office" && (
-                  <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
-                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300">
-                      <input
-                        type="checkbox"
-                        checked={customDateTimeEnabled}
-                        onChange={(e) => setCustomDateTimeEnabled(e.target.checked)}
-                        className="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700"
-                      />
-                      <span>Schedule Custom Next Call Date & Time</span>
-                    </label>
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs flex flex-wrap justify-between gap-2">
+                    <div><span className="text-slate-500">Requirement:</span> <span className="text-emerald-400 font-bold">{activeLeadModal["आपको कौन कौनसे chemical चाहिए?"] || "—"}</span></div>
+                    <div><span className="text-slate-500">Budget:</span> <span className="text-amber-400 font-bold">₹{activeLeadModal["सर आपका बजट कितना है?"] || "—"}</span></div>
+                  </div>
 
-                    {customDateTimeEnabled && (
-                      <div className="grid grid-cols-2 gap-2 pt-1">
+                  {/* PRIORITY SELECTOR (HOT / WARM / COLD) */}
+                  <div>
+                    <label className="text-xs font-semibold text-slate-400 block mb-1.5">Lead Priority Tag</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "HOT", label: "🔥 HOT (High Intent)", activeCls: "bg-rose-500/20 border-rose-500 text-rose-300" },
+                        { id: "WARM", label: "🟡 WARM (Follow-up)", activeCls: "bg-amber-500/20 border-amber-500 text-amber-300" },
+                        { id: "COLD", label: "🔵 COLD (Low Priority)", activeCls: "bg-blue-500/20 border-blue-500 text-blue-300" },
+                      ].map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setLeadPriorityInput(p.id)}
+                          className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition ${
+                            leadPriorityInput === p.id
+                              ? p.activeCls
+                              : "bg-slate-950 border-slate-800 text-slate-400"
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-slate-400 block mb-1">Call Outcome / Status *</label>
+                    <select
+                      value={callStatusInput}
+                      onChange={(e) => setCallStatusInput(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-medium"
+                    >
+                      <option value="Interested">Connected - Interested (Cadence Flow)</option>
+                      <option value="Planning to Visit Office">🏢 Planning to Visit Office</option>
+                      <option value="Same Day Follow-up">Connected - Same Day Follow-up (Keep Current Stage)</option>
+                      <option value="Busy / Call Tomorrow">Connected - Busy / Call Tomorrow</option>
+                      <option value="Ringing / Not Picked">Ringing / Phone Nahi Uthaya</option>
+                      <option value="Order Confirmed">🎉 Order Confirmed (Booking)</option>
+                      <option value="Not Interested">Not Interested / Closed</option>
+                    </select>
+                  </div>
+
+                  {callStatusInput === "Planning to Visit Office" && (
+                    <div className="p-3.5 bg-indigo-950/40 border border-indigo-500/40 rounded-2xl space-y-3">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-300">
+                        <Building2 className="w-4 h-4 text-indigo-400" />
+                        <span>Office Visit Date & Reminder Time</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <span className="text-[10px] font-semibold text-slate-400 block mb-1">Next Date *</span>
+                          <span className="text-[10px] font-semibold text-slate-300 block mb-1">Visit Date *</span>
                           <input
                             type="date"
                             required
-                            value={customDateInput}
-                            onChange={(e) => setCustomDateInput(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                            value={visitDateInput}
+                            onChange={(e) => setVisitDateInput(e.target.value)}
+                            className="w-full bg-slate-950 border border-indigo-500/40 rounded-xl p-2 text-xs text-white"
                           />
                         </div>
                         <div>
-                          <span className="text-[10px] font-semibold text-slate-400 block mb-1">Exact Time (Popup Alert)</span>
+                          <span className="text-[10px] font-semibold text-slate-300 block mb-1">Reminder Time</span>
                           <input
                             type="time"
-                            value={customTimeInput}
-                            onChange={(e) => setCustomTimeInput(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-emerald-400 font-mono"
+                            value={visitTimeInput}
+                            onChange={(e) => setVisitTimeInput(e.target.value)}
+                            className="w-full bg-slate-950 border border-indigo-500/40 rounded-xl p-2 text-xs text-indigo-300 font-mono"
                           />
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {callStatusInput !== "Order Confirmed" && callStatusInput !== "Not Interested" && callStatusInput !== "Planning to Visit Office" && (
+                    <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={customDateTimeEnabled}
+                          onChange={(e) => setCustomDateTimeEnabled(e.target.checked)}
+                          className="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700"
+                        />
+                        <span>Schedule Custom Next Call Date & Time</span>
+                      </label>
+
+                      {customDateTimeEnabled && (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <div>
+                            <span className="text-[10px] font-semibold text-slate-400 block mb-1">Next Date *</span>
+                            <input
+                              type="date"
+                              required
+                              value={customDateInput}
+                              onChange={(e) => setCustomDateInput(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-semibold text-slate-400 block mb-1">Exact Time (Popup Alert)</span>
+                            <input
+                              type="time"
+                              value={customTimeInput}
+                              onChange={(e) => setCustomTimeInput(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-emerald-400 font-mono"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {callStatusInput === "Order Confirmed" && (
+                    <div className="p-3.5 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl space-y-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-emerald-400 block mb-1">Order Amount (₹) *</label>
+                        <input
+                          type="number"
+                          required
+                          placeholder="e.g. 8500"
+                          value={orderAmountInput}
+                          onChange={(e) => setOrderAmountInput(e.target.value)}
+                          className="w-full bg-slate-950 border border-emerald-500/60 rounded-xl px-3 py-2 text-sm text-emerald-300 font-black"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-300 block mb-1">Ordered Products / Quantity (Kg)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 50kg White Phenyl + 25kg Handwash"
+                          value={orderDetailsInput}
+                          onChange={(e) => setOrderDetailsInput(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-xs font-semibold text-slate-400 block mb-1">Baat-cheet ka Naya Remark / Notes</label>
+                    <textarea
+                      rows={3}
+                      value={callNoteInput}
+                      onChange={(e) => setCallNoteInput(e.target.value)}
+                      placeholder="Customer ne kya kaha? Sample kit bhejna hai ya rate discuss hua..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <button
+                    disabled={saving}
+                    onClick={handleSaveFollowUp}
+                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                  >
+                    {saving
+                      ? "Saving to Sheet..."
+                      : autoDialerActive
+                      ? "Save & Load Next Call ⚡"
+                      : "Save Call & Schedule"}
+                  </button>
+                </div>
+
+                {/* RIGHT COLUMN: LIVE PITCH ASSISTANT (PAST REMARKS + OBJECTIONS + RATES) */}
+                <div className="lg:col-span-6 bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col max-h-[78vh]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                    <span className="text-xs font-black uppercase text-amber-400">Live Pitch Assistant</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setModalHelperTab("history")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition ${
+                          modalHelperTab === "history"
+                            ? "bg-emerald-500 text-slate-950"
+                            : "bg-slate-900 text-slate-300 border border-slate-800 hover:text-white"
+                        }`}
+                      >
+                        <History className="w-3 h-3" />
+                        <span>Remarks ({customerPastRemarks.length})</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalHelperTab("objections")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+                          modalHelperTab === "objections"
+                            ? "bg-purple-500 text-white"
+                            : "bg-slate-900 text-slate-300 border border-slate-800 hover:text-white"
+                        }`}
+                      >
+                        Objections (12)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalHelperTab("catalog")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+                          modalHelperTab === "catalog"
+                            ? "bg-indigo-500 text-white"
+                            : "bg-slate-900 text-slate-300 border border-slate-800 hover:text-white"
+                        }`}
+                      >
+                        Rates & Ratios
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="overflow-y-auto flex-1 space-y-2.5 pt-3 pr-1">
+                    {modalHelperTab === "history" ? (
+                      <div className="space-y-3">
+                        {/* Customer Quick Snapshot */}
+                        <div className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs space-y-1.5">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                              Customer Profile & Stage
+                            </span>
+                            <span className="text-[10px] font-mono bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded font-bold">
+                              {activeLeadModal["Current_Stage"] || "Day 1"} • {activeLeadModal["Call_Status"] || "New"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1 text-[11px] text-slate-300 pt-1">
+                            <div><span className="text-slate-500">City:</span> {activeLeadModal["City"] || "—"}</div>
+                            <div><span className="text-slate-500">Budget:</span> ₹{activeLeadModal["सर आपका बजट कितना है?"] || "—"}</div>
+                            <div className="col-span-2">
+                              <span className="text-slate-500">Chemicals:</span> {activeLeadModal["आपको कौन कौनसे chemical चाहिए?"] || "—"}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Chronological Past Remarks */}
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 pt-1">
+                          <CalendarCheck className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Puraani Baat-Cheet (Previous Remarks)</span>
+                        </div>
+
+                        {customerPastRemarks.length > 0 ? (
+                          customerPastRemarks.map((rem, idx) => (
+                            <div key={idx} className="p-3 bg-slate-900 rounded-xl border border-emerald-500/20 space-y-1">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-black uppercase bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded font-mono">
+                                  {rem.stage}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed pt-1">
+                                {rem.note}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-6 text-center bg-slate-900/60 rounded-2xl border border-slate-800 space-y-1.5">
+                            <p className="text-xs font-bold text-slate-300">Fresh Lead — Koi Purana Remark Nahi Hai</p>
+                            <p className="text-[11px] text-slate-500">
+                              Is customer se abhi tak koi call log nahi hui hai. Upar "Objections (12)" ya "Rates & Ratios" dekh kar baat shuru karein.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : modalHelperTab === "catalog" ? (
+                      PRODUCT_CATALOG.map((p, idx) => (
+                        <div key={idx} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-white">{p.name}</span>
+                            <span className="text-[10px] text-emerald-400 font-mono">{p.ratio}</span>
+                          </div>
+                          <div className="text-[11px] text-amber-400 font-mono font-bold">{p.slabs}</div>
+                          <div className="text-[10px] text-slate-400">{p.instructions}</div>
+                        </div>
+                      ))
+                    ) : (
+                      OBJECTION_SCRIPTS.map((obj) => (
+                        <div key={obj.id} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+                          <div className="text-xs font-bold text-purple-300">{obj.title}</div>
+                          <p className="text-[11px] text-slate-200 leading-relaxed">"{obj.reply}"</p>
+                        </div>
+                      ))
                     )}
                   </div>
-                )}
-
-                {callStatusInput === "Order Confirmed" && (
-                  <div className="p-3.5 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl space-y-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-emerald-400 block mb-1">Order Amount (₹) *</label>
-                      <input
-                        type="number"
-                        required
-                        placeholder="e.g. 8500"
-                        value={orderAmountInput}
-                        onChange={(e) => setOrderAmountInput(e.target.value)}
-                        className="w-full bg-slate-950 border border-emerald-500/60 rounded-xl px-3 py-2 text-sm text-emerald-300 font-black"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-300 block mb-1">Ordered Products / Quantity (Kg)</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 50kg White Phenyl + 25kg Handwash"
-                        value={orderDetailsInput}
-                        onChange={(e) => setOrderDetailsInput(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-400 block mb-1">Baat-cheet ka Remark / Notes</label>
-                  <textarea
-                    rows={3}
-                    value={callNoteInput}
-                    onChange={(e) => setCallNoteInput(e.target.value)}
-                    placeholder="Customer ne kya kaha? Sample kit bhejna hai ya rate discuss hua..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <button
-                  disabled={saving}
-                  onClick={handleSaveFollowUp}
-                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
-                >
-                  {saving
-                    ? "Saving to Sheet..."
-                    : autoDialerActive
-                    ? "Save & Load Next Call ⚡"
-                    : "Save Call & Schedule"}
-                </button>
-              </div>
-
-              {/* RIGHT COLUMN: LIVE IN-CALL OBJECTION & PRICE PITCH ASSISTANT */}
-              <div className="lg:col-span-5 bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col max-h-[75vh]">
-                <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-800">
-                  <span className="text-xs font-black uppercase text-amber-400">Live Pitch Assistant</span>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setModalHelperTab("objections")}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
-                        modalHelperTab !== "catalog" ? "bg-purple-500 text-white" : "bg-slate-900 text-slate-400"
-                      }`}
-                    >
-                      Objections (12)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setModalHelperTab("catalog")}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
-                        modalHelperTab === "catalog" ? "bg-indigo-500 text-white" : "bg-slate-900 text-slate-400"
-                      }`}
-                    >
-                      Rates & Ratios
-                    </button>
-                  </div>
-                </div>
-
-                <div className="overflow-y-auto flex-1 space-y-2.5 pt-3 pr-1">
-                  {modalHelperTab === "catalog" ? (
-                    PRODUCT_CATALOG.map((p, idx) => (
-                      <div key={idx} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-white">{p.name}</span>
-                          <span className="text-[10px] text-emerald-400 font-mono">{p.ratio}</span>
-                        </div>
-                        <div className="text-[11px] text-amber-400 font-mono font-bold">{p.slabs}</div>
-                        <div className="text-[10px] text-slate-400">{p.instructions}</div>
-                      </div>
-                    ))
-                  ) : (
-                    OBJECTION_SCRIPTS.map((obj) => (
-                      <div key={obj.id} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
-                        <div className="text-xs font-bold text-purple-300">{obj.title}</div>
-                        <p className="text-[11px] text-slate-200 leading-relaxed">"{obj.reply}"</p>
-                      </div>
-                    ))
-                  )}
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ➕ IN-APP NEW CUSTOMER CREATION MODAL */}
       {newCustomerModalOpen && (
