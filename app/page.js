@@ -6,7 +6,8 @@ import {
   TrendingUp, Award, IndianRupee, CalendarCheck, Clock,
   Calendar, Edit3, History, Maximize2, Minimize2, Search, 
   Contact, Building2, Zap, BookOpen, ShieldAlert, 
-  Users, Copy, Check, Sparkles, FlaskConical, BarChart3, ChevronDown, ChevronUp
+  Users, Copy, Check, Sparkles, FlaskConical, BarChart3, 
+  ChevronDown, ChevronUp, GitMerge, AlertTriangle
 } from "lucide-react";
 
 const FOLLOWUP_FLOW = [
@@ -246,6 +247,12 @@ const getISTTodayDate = () => {
   }
 };
 
+// Normalize Indian phone numbers to last 10 digits for accurate duplicate matching
+const normalizePhone10 = (raw) => {
+  const digits = String(raw || "").replace(/[^0-9]/g, "");
+  return digits.length >= 10 ? digits.slice(-10) : digits;
+};
+
 // Format YYYY-MM to readable Month Year
 const formatMonthLabel = (ym) => {
   if (!ym || ym.length < 7) return ym;
@@ -278,7 +285,6 @@ const buildWhatsAppTemplate = (type, lead, callerName) => {
     return `नमस्ते ${name} जी! 🙏\n*Khushali Chemicals (Jaipur)* भारत के 20+ राज्यों में क्लीनिंग रॉ मटेरियल सप्लाई कर रहा है।\n\n✨ *हमारी पहचान:*\n• *Founder:* Rohit Sambhawani (@rohitsam.0 on Instagram)\n• *Registered GST:* 08PBDPS5444B1ZD\n• *Website:* khushalichemicals.com\n• *1-Compound Technology:* बिना किसी कॉम्प्लेक्स प्रोसेस के सीधे पानी मिलाकर मार्केट-रेडी प्रोडक्ट बनाएं।\n\nहम प्रोडक्ट बेचने से पहले कस्टमर का भरोसा जीतने में विश्वास रखते हैं। आपकी *${reqChem}* की रिक्वायरमेंट के लिए कॉल पर बात करें?`;
   }
 
-  // Default Follow-up
   return `नमस्ते ${name} जी! 🙏 Khushali Chemicals (Jaipur) से ${callerName} बात कर रहा हूँ। आपकी *${reqChem}* की रिक्वायरमेंट के रिगार्डिंग हमने कोटेशन शेयर किया था। कृपया बताएं ट्रायल पैक या ऑर्डर कब डिस्पैच करवाएं?`;
 };
 
@@ -292,13 +298,14 @@ export default function KhushaliCallerCRM() {
 
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [merging, setMerging] = useState(false);
   const [activeFilter, setActiveFilter] = useState("today");
-  const [adminCallerFilter, setAdminCallerFilter] = useState("all"); // 'all' | 'piyush' | 'garv'
-  const [selectedMonth, setSelectedMonth] = useState(todayDate.slice(0, 7)); // 'YYYY-MM'
+  const [adminCallerFilter, setAdminCallerFilter] = useState("all");
+  const [selectedMonth, setSelectedMonth] = useState(todayDate.slice(0, 7));
   const [showDailyBreakdown, setShowDailyBreakdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // ⚡ Power Auto-Dialer State
+  // Power Auto-Dialer State
   const [autoDialerActive, setAutoDialerActive] = useState(false);
 
   // Popups & Modals State
@@ -309,13 +316,13 @@ export default function KhushaliCallerCRM() {
   const [historyModalLead, setHistoryModalLead] = useState(null);
   const [newCustomerModalOpen, setNewCustomerModalOpen] = useState(false);
   const [editCustomerModalOpen, setEditCustomerModalOpen] = useState(false);
-  const [knowledgeModalTab, setKnowledgeModalTab] = useState(null); // 'catalog' | 'objections' | null
+  const [knowledgeModalTab, setKnowledgeModalTab] = useState(null);
   const [waTemplateModalLead, setWaTemplateModalLead] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   
   // Call Update Inputs
   const [callStatusInput, setCallStatusInput] = useState("Interested");
-  const [leadPriorityInput, setLeadPriorityInput] = useState("WARM"); // HOT | WARM | COLD
+  const [leadPriorityInput, setLeadPriorityInput] = useState("WARM");
   const [orderAmountInput, setOrderAmountInput] = useState("");
   const [orderDetailsInput, setOrderDetailsInput] = useState("");
   const [visitDateInput, setVisitDateInput] = useState("");
@@ -324,7 +331,7 @@ export default function KhushaliCallerCRM() {
   const [customDateTimeEnabled, setCustomDateTimeEnabled] = useState(false);
   const [customDateInput, setCustomDateInput] = useState("");
   const [customTimeInput, setCustomTimeInput] = useState("");
-  const [modalHelperTab, setModalHelperTab] = useState("history"); // 'history' | 'objections' | 'catalog'
+  const [modalHelperTab, setModalHelperTab] = useState("history");
   const [saving, setSaving] = useState(false);
 
   // New Customer Form State
@@ -379,7 +386,6 @@ export default function KhushaliCallerCRM() {
     sessionStorage.removeItem("khushali_active_caller");
   };
 
-  // Helper to detect Priority from Notes or Status
   const getLeadPriority = (lead) => {
     const status = lead["Call_Status"] || "";
     const allNotes = FOLLOWUP_FLOW.map(f => lead[f.noteCol] || "").join(" ");
@@ -391,7 +397,6 @@ export default function KhushaliCallerCRM() {
     return "WARM";
   };
 
-  // Helper to count existing remarks for a lead
   const getLeadRemarksList = (lead) => {
     if (!lead) return [];
     const list = [];
@@ -406,7 +411,6 @@ export default function KhushaliCallerCRM() {
     return list;
   };
 
-  // Helper to extract all call dates (YYYY-MM-DD) for a lead
   const getLeadCallDates = (lead) => {
     const dates = [];
     const allNotes = FOLLOWUP_FLOW.map(f => String(lead[f.noteCol] || "")).join(" ");
@@ -420,6 +424,16 @@ export default function KhushaliCallerCRM() {
     }
     return dates;
   };
+
+  // Live duplicate detector as user types in "Naya Customer" modal
+  const liveDuplicateLead = useMemo(() => {
+    const typedNorm = normalizePhone10(newLeadForm.number);
+    if (typedNorm.length < 8) return null;
+    return leads.find((l) => {
+      const existingNorm = normalizePhone10(l["Number"] || l["Contact Number"]);
+      return existingNorm === typedNorm;
+    }) || null;
+  }, [newLeadForm.number, leads]);
 
   // FETCH SINGLE CALLER OR BOTH CALLERS (FOR ADMIN)
   const fetchCallerSheet = async () => {
@@ -483,6 +497,38 @@ export default function KhushaliCallerCRM() {
     }
   }, [loggedInCaller]);
 
+  // 🔄 TRIGGER MERGE DUPLICATES IN GOOGLE SHEETS & REFRESH
+  const handleMergeDuplicatesNow = async () => {
+    if (!loggedInCaller) return;
+    setMerging(true);
+    try {
+      const urlsToMerge = loggedInCaller.role === "admin"
+        ? [CALLER_PROFILES.piyush.sheetApiUrl, CALLER_PROFILES.garv.sheetApiUrl].filter(Boolean)
+        : [loggedInCaller.sheetApiUrl].filter(Boolean);
+
+      await Promise.all(
+        urlsToMerge.map((url) =>
+          fetch(url, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "merge_duplicates" }),
+          })
+        )
+      );
+
+      // Wait briefly for Apps Script sheet row cleanup, then re-fetch clean data
+      setTimeout(async () => {
+        await fetchCallerSheet();
+        setMerging(false);
+        alert("✅ Sabhi duplicate numbers merge ho gaye hain aur sheet clean ho gayi hai!");
+      }, 1500);
+    } catch (err) {
+      setMerging(false);
+      alert("Merge karne me error aaya: " + err.message);
+    }
+  };
+
   // Available Months Dropdown List
   const availableMonths = useMemo(() => {
     const monthSet = new Set([todayDate.slice(0, 7)]);
@@ -500,7 +546,6 @@ export default function KhushaliCallerCRM() {
   // 📊 DAILY + MONTHLY PERFORMANCE & DATE-WISE BREAKDOWN
   const performanceStats = useMemo(() => {
     const calcForList = (list, targetRev = 15000) => {
-      // Daily Metrics
       let callsCount = 0;
       let ordersCount = 0;
       let revenue = 0;
@@ -508,7 +553,6 @@ export default function KhushaliCallerCRM() {
       let overdueCount = 0;
       let hotCount = 0;
 
-      // Monthly Metrics (for selectedMonth)
       let monthlyCalls = 0;
       let monthlyUniqueLeads = 0;
       let monthlyNewLeads = 0;
@@ -524,7 +568,6 @@ export default function KhushaliCallerCRM() {
         const day1Date = l["Day_1_Date"] ? String(l["Day_1_Date"]).split("T")[0] : "";
         const tsDate = l["Timestamp"] ? String(l["Timestamp"]).split("T")[0] : "";
 
-        // 1. Today's Stats
         if (lastCall === todayDate) {
           callsCount += 1;
           if (status === "Order Confirmed") {
@@ -536,7 +579,6 @@ export default function KhushaliCallerCRM() {
         if (!isClosed && nextDate && nextDate < todayDate) overdueCount += 1;
         if (!isClosed && getLeadPriority(l) === "HOT") hotCount += 1;
 
-        // 2. Monthly Stats
         const callDates = getLeadCallDates(l);
         const callsInMonth = callDates.filter((d) => d.startsWith(selectedMonth)).length;
         if (callsInMonth > 0) {
@@ -590,7 +632,6 @@ export default function KhushaliCallerCRM() {
     const piyushStats = calcForList(leads.filter((l) => l._callerId === "piyush"), 15000);
     const garvStats = calcForList(leads.filter((l) => l._callerId === "garv"), 15000);
 
-    // Date-wise breakdown for selectedMonth (Admin View)
     const dailyMap = {};
     leads.forEach((l) => {
       const caller = l._callerId || "piyush";
@@ -622,7 +663,7 @@ export default function KhushaliCallerCRM() {
     return { overall, piyushStats, garvStats, dailyBreakdownList, monthlyMissionProgress };
   }, [leads, todayDate, loggedInCaller, selectedMonth]);
 
-  // ALL TABS LIVE BADGE COUNTS (INCLUDING OFFICE VISITS)
+  // ALL TABS LIVE BADGE COUNTS
   const tabCounts = useMemo(() => {
     let today = 0;
     let calledToday = 0;
@@ -660,13 +701,13 @@ export default function KhushaliCallerCRM() {
     return { today, calledToday, ordersToday, officeVisit, hotLeads, overdue, upcoming, all: baseList.length };
   }, [leads, todayDate, loggedInCaller, adminCallerFilter]);
 
-  // 🔔 TIME-BASED CALL POPUP ALARM + CHECKER
+  // TIME-BASED CALL POPUP ALARM + CHECKER
   useEffect(() => {
     if (!loggedInCaller || leads.length === 0) return;
 
     const checkScheduledAndUrgentCalls = () => {
       const now = new Date();
-      const currentTimeStr = now.toTimeString().slice(0, 5); // HH:MM
+      const currentTimeStr = now.toTimeString().slice(0, 5);
 
       const exactTimeLead = leads.find((l) => {
         const status = l["Call_Status"] || "New";
@@ -704,7 +745,6 @@ export default function KhushaliCallerCRM() {
     return () => clearInterval(timer);
   }, [leads, loggedInCaller, todayDate, showSmartPopup, smartPopupLead]);
 
-  // SNOOZE ACTION: PUSH TO LAST ROW & MINIMIZE POPUP
   const handleSnooze = () => {
     if (!smartPopupLead) return;
     setLeads((prev) => {
@@ -714,7 +754,6 @@ export default function KhushaliCallerCRM() {
     setIsPopupMinimized(true);
   };
 
-  // CADENCE LOGIC: SAME DAY MULTIPLE CALLS PAR STAGE ADVANCE NAHI HOGA
   const calculateNextFollowUp = (lead, forceSameDay = false) => {
     const currentStage = lead["Current_Stage"] || "Day 1";
     const lastCallDate = lead["Last_Call_Date"] ? String(lead["Last_Call_Date"]).split("T")[0] : "";
@@ -761,7 +800,6 @@ export default function KhushaliCallerCRM() {
     setCustomDateInput("");
     setCustomTimeInput("");
 
-    // Agar customer ke puraane remarks hain, toh Pitch Assistant me pehle Remarks tab dikhao!
     const existingRemarks = getLeadRemarksList(lead);
     setModalHelperTab(existingRemarks.length > 0 ? "history" : "objections");
   };
@@ -863,7 +901,6 @@ export default function KhushaliCallerCRM() {
       setOrderAmountInput("");
       setOrderDetailsInput("");
 
-      // ⚡ POWER AUTO-DIALER: Automatically open next due call if active
       if (autoDialerActive) {
         const nextDueLead = updatedLeads.find((l) => {
           if (l._uniqueKey === currentUniqueKey) return false;
@@ -890,10 +927,31 @@ export default function KhushaliCallerCRM() {
     }
   };
 
-  // IN-APP NEW CUSTOMER SUBMIT
+  // 🚫 IN-APP NEW CUSTOMER SUBMIT WITH DUPLICATE BLOCK
   const handleAddNewCustomer = async (e) => {
     e.preventDefault();
     if (!loggedInCaller) return;
+
+    const cleanName = String(newLeadForm.name || "").trim();
+    const cleanNumber = String(newLeadForm.number || "").trim();
+    const normNewPhone = normalizePhone10(cleanNumber);
+
+    // Block if duplicate exists in CRM
+    const existingLead = leads.find((l) => {
+      const existingNorm = normalizePhone10(l["Number"] || l["Contact Number"]);
+      return normNewPhone.length >= 8 && existingNorm === normNewPhone;
+    });
+
+    if (existingLead) {
+      alert(
+        `⚠️ Ye Lead Already Exists Karti Hai! Dubara Save Nahi Hogi.\n\n` +
+        `👤 Customer Name: ${existingLead["Name"] || "Unknown"}\n` +
+        `📞 Mobile Number: ${existingLead["Number"] || existingLead["Contact Number"]}\n` +
+        `🎧 Assigned Caller: ${existingLead._callerName || loggedInCaller.name}\n` +
+        `📊 Current Status: ${existingLead["Call_Status"] || "New"} (${existingLead["Current_Stage"] || "Day 1"})`
+      );
+      return;
+    }
 
     try {
       setSaving(true);
@@ -904,8 +962,6 @@ export default function KhushaliCallerCRM() {
       const callerLeads = leads.filter(l => l._callerId === targetCallerObj.id);
       const newRowIndex = callerLeads.length > 0 ? Math.max(...callerLeads.map(l => Number(l.rowIndex) || 0)) + 1 : 2;
 
-      const cleanName = String(newLeadForm.name || "").trim();
-      const cleanNumber = String(newLeadForm.number || "").trim();
       const cleanCity = String(newLeadForm.city || "").trim();
       const cleanBudget = String(newLeadForm.budget || "").trim();
       const cleanChemicals = String(newLeadForm.chemicals || "").trim();
@@ -1080,7 +1136,6 @@ export default function KhushaliCallerCRM() {
     });
   }, [leads, activeFilter, todayDate, searchQuery, loggedInCaller, adminCallerFilter]);
 
-  // START POWER AUTO DIALER SESSION
   const startAutoDialerSession = () => {
     const firstDue = filteredLeads.find((l) => {
       const st = l["Call_Status"] || "New";
@@ -1212,7 +1267,6 @@ export default function KhushaliCallerCRM() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* ⚡ POWER AUTO-DIALER BUTTON */}
           <button
             onClick={() => {
               if (autoDialerActive) setAutoDialerActive(false);
@@ -1228,7 +1282,6 @@ export default function KhushaliCallerCRM() {
             {autoDialerActive ? "Stop Auto-Dialer" : "Start Power Dialer"}
           </button>
 
-          {/* 📖 PRICE LIST & FORMULATION GUIDE BUTTON */}
           <button
             onClick={() => setKnowledgeModalTab("catalog")}
             className="flex items-center gap-1.5 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/40 text-indigo-300 px-3 py-2 rounded-xl text-xs font-bold transition"
@@ -1236,7 +1289,6 @@ export default function KhushaliCallerCRM() {
             <BookOpen className="w-3.5 h-3.5" /> Price & Formula
           </button>
 
-          {/* 🛡️ OBJECTION HANDLING SCRIPTS BUTTON */}
           <button
             onClick={() => setKnowledgeModalTab("objections")}
             className="flex items-center gap-1.5 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 px-3 py-2 rounded-xl text-xs font-bold transition"
@@ -1249,6 +1301,16 @@ export default function KhushaliCallerCRM() {
             className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md shadow-emerald-500/20"
           >
             <PlusCircle className="w-4 h-4" /> Naya Customer
+          </button>
+
+          <button
+            disabled={merging}
+            onClick={handleMergeDuplicatesNow}
+            className="flex items-center gap-1.5 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 px-3 py-2 rounded-xl text-xs font-bold transition"
+            title="Sheet me maujood duplicate numbers ko ek row me merge karein"
+          >
+            <GitMerge className={`w-3.5 h-3.5 ${merging ? "animate-spin" : ""}`} />
+            {merging ? "Merging..." : "Merge Duplicates"}
           </button>
 
           <button
@@ -1271,7 +1333,6 @@ export default function KhushaliCallerCRM() {
       {loggedInCaller.role === "admin" && (
         <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-amber-500/30 rounded-3xl p-5 space-y-5 shadow-2xl">
           
-          {/* Report Header & Month / Caller Filters */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-800 pb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
@@ -1288,7 +1349,6 @@ export default function KhushaliCallerCRM() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* Month Selector */}
               <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
                 <Calendar className="w-3.5 h-3.5 text-amber-400" />
                 <span className="text-[11px] text-slate-400 font-semibold">Month:</span>
@@ -1305,7 +1365,6 @@ export default function KhushaliCallerCRM() {
                 </select>
               </div>
 
-              {/* Caller Table Filter */}
               <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 p-1 rounded-xl">
                 {[
                   { id: "all", label: "Both" },
@@ -1328,7 +1387,6 @@ export default function KhushaliCallerCRM() {
             </div>
           </div>
 
-          {/* 📅 TEAM COMBINED MONTHLY PROGRESS SUMMARY (₹10 LAKH MISSION) */}
           <div className="bg-slate-950/90 border border-emerald-500/30 rounded-2xl p-4 space-y-3">
             <div className="flex flex-wrap justify-between items-center gap-2">
               <span className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
@@ -1387,7 +1445,6 @@ export default function KhushaliCallerCRM() {
             </div>
           </div>
 
-          {/* 👥 CALLER-WISE SIDE-BY-SIDE (DAILY + MONTHLY BREAKDOWN) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {[
               { name: "Piyush (WhatsApp SIM 1)", stats: performanceStats.piyushStats, badgeColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
@@ -1403,7 +1460,6 @@ export default function KhushaliCallerCRM() {
                   </span>
                 </div>
 
-                {/* Today's Scorecard */}
                 <div>
                   <div className="flex justify-between items-center text-[11px] mb-1.5">
                     <span className="font-bold text-slate-400 uppercase tracking-wider">Today's Performance</span>
@@ -1431,7 +1487,6 @@ export default function KhushaliCallerCRM() {
                   </div>
                 </div>
 
-                {/* Monthly Scorecard */}
                 <div>
                   <div className="flex justify-between items-center text-[11px] mb-1.5">
                     <span className="font-bold text-emerald-400 uppercase tracking-wider">
@@ -1470,7 +1525,6 @@ export default function KhushaliCallerCRM() {
             ))}
           </div>
 
-          {/* 📆 DATE-WISE DAILY ACTIVITY LOG FOR SELECTED MONTH */}
           <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden">
             <button
               type="button"
@@ -1527,7 +1581,7 @@ export default function KhushaliCallerCRM() {
         </div>
       )}
 
-      {/* 🚀 LIVE DAILY SCORECARD (60 CALLS | 4 ORDERS | ₹15,000 TARGET) */}
+      {/* 🚀 LIVE DAILY SCORECARD */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center text-xs text-slate-400 font-semibold">
@@ -1958,7 +2012,6 @@ export default function KhushaliCallerCRM() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Caller Rules & Golden Lines */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="bg-rose-950/30 border border-rose-500/30 p-3.5 rounded-2xl text-xs space-y-1">
                       <div className="font-black text-rose-400 uppercase">❌ कभी मत बोलो (Never Say):</div>
@@ -1976,7 +2029,6 @@ export default function KhushaliCallerCRM() {
                     </div>
                   </div>
 
-                  {/* 12 Objections Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {OBJECTION_SCRIPTS.map((obj) => (
                       <div key={obj.id} className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-2">
@@ -2230,7 +2282,7 @@ export default function KhushaliCallerCRM() {
                     <div><span className="text-slate-500">Budget:</span> <span className="text-amber-400 font-bold">₹{activeLeadModal["सर आपका बजट कितना है?"] || "—"}</span></div>
                   </div>
 
-                  {/* PRIORITY SELECTOR (HOT / WARM / COLD) */}
+                  {/* PRIORITY SELECTOR */}
                   <div>
                     <label className="text-xs font-semibold text-slate-400 block mb-1.5">Lead Priority Tag</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -2507,7 +2559,7 @@ export default function KhushaliCallerCRM() {
         );
       })()}
 
-      {/* ➕ IN-APP NEW CUSTOMER CREATION MODAL */}
+      {/* ➕ IN-APP NEW CUSTOMER CREATION MODAL (WITH DUPLICATE DETECTION & BLOCK) */}
       {newCustomerModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl space-y-4">
@@ -2559,7 +2611,11 @@ export default function KhushaliCallerCRM() {
                     placeholder="e.g. 9876543210"
                     value={newLeadForm.number}
                     onChange={(e) => setNewLeadForm({ ...newLeadForm, number: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-emerald-400 font-mono focus:outline-none focus:border-emerald-500"
+                    className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-sm font-mono focus:outline-none ${
+                      liveDuplicateLead
+                        ? "border-rose-500 text-rose-400"
+                        : "border-slate-800 text-emerald-400 focus:border-emerald-500"
+                    }`}
                   />
                 </div>
                 <div>
@@ -2575,6 +2631,22 @@ export default function KhushaliCallerCRM() {
                   </select>
                 </div>
               </div>
+
+              {/* LIVE DUPLICATE WARNING BANNER */}
+              {liveDuplicateLead && (
+                <div className="p-3 bg-rose-950/60 border border-rose-500/50 rounded-2xl text-xs space-y-1 animate-fade-in">
+                  <div className="font-black text-rose-400 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Already Exists! Ye Lead Pehle Se Save Hai</span>
+                  </div>
+                  <div className="text-slate-200">
+                    <b>Name:</b> {liveDuplicateLead["Name"] || "—"} ({liveDuplicateLead._callerName || loggedInCaller.name})
+                  </div>
+                  <div className="text-slate-300">
+                    <b>Status:</b> {liveDuplicateLead["Call_Status"] || "New"} ({liveDuplicateLead["Current_Stage"] || "Day 1"})
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -2623,10 +2695,18 @@ export default function KhushaliCallerCRM() {
 
               <button
                 type="submit"
-                disabled={saving}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/20"
+                disabled={saving || Boolean(liveDuplicateLead)}
+                className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${
+                  liveDuplicateLead
+                    ? "bg-rose-500/20 border border-rose-500/40 text-rose-300 cursor-not-allowed"
+                    : "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20"
+                }`}
               >
-                {saving ? "Saving & Syncing to Contacts..." : "Customer Add Karein"}
+                {liveDuplicateLead
+                  ? "⚠️ Duplicate Number — Save Blocked"
+                  : saving
+                  ? "Saving & Syncing to Contacts..."
+                  : "Customer Add Karein"}
               </button>
             </form>
           </div>
