@@ -6,7 +6,7 @@ import {
   TrendingUp, Award, IndianRupee, CalendarCheck, Clock,
   Calendar, Edit3, History, Maximize2, Minimize2, Search, 
   Contact, Building2, Zap, BookOpen, ShieldAlert, 
-  Users, Copy, Check, Sparkles, FlaskConical
+  Users, Copy, Check, Sparkles, FlaskConical, BarChart3, ChevronDown, ChevronUp
 } from "lucide-react";
 
 const FOLLOWUP_FLOW = [
@@ -25,9 +25,9 @@ const CALLER_PROFILES = {
     name: "Piyush",
     role: "caller",
     whatsappLine: "WhatsApp SIM 1",
-    dailyTargetRevenue: 13500,
-    dailyTargetCalls: 40,
-    dailyTargetOrders: 2,
+    dailyTargetRevenue: 15000,
+    dailyTargetCalls: 60,
+    dailyTargetOrders: 4,
     password: process.env.NEXT_PUBLIC_PIYUSH_PASS || "piyush123",
     sheetApiUrl: process.env.NEXT_PUBLIC_PIYUSH_SHEET_URL,
     formUrl: "https://forms.gle/RW2wP2eHhpZ8Zihh7",
@@ -37,9 +37,9 @@ const CALLER_PROFILES = {
     name: "Garv",
     role: "caller",
     whatsappLine: "WhatsApp SIM 2",
-    dailyTargetRevenue: 13500,
-    dailyTargetCalls: 40,
-    dailyTargetOrders: 2,
+    dailyTargetRevenue: 15000,
+    dailyTargetCalls: 60,
+    dailyTargetOrders: 4,
     password: process.env.NEXT_PUBLIC_GARV_PASS || "garv123",
     sheetApiUrl: process.env.NEXT_PUBLIC_GARV_SHEET_URL,
     formUrl: process.env.NEXT_PUBLIC_GARV_FORM_URL || "https://docs.google.com/forms",
@@ -49,9 +49,10 @@ const CALLER_PROFILES = {
     name: "Admin (Trainer)",
     role: "admin",
     whatsappLine: "All Lines (Master View)",
-    dailyTargetRevenue: 27000,
-    dailyTargetCalls: 80,
-    dailyTargetOrders: 4,
+    dailyTargetRevenue: 30000,
+    dailyTargetCalls: 120,
+    dailyTargetOrders: 8,
+    monthlyTargetRevenue: 1000000,
     password: process.env.NEXT_PUBLIC_ADMIN_PASS || "admin123",
   }
 };
@@ -236,6 +237,24 @@ const playNotificationChime = () => {
   } catch (e) {}
 };
 
+// IST Safe Date Helper (YYYY-MM-DD)
+const getISTTodayDate = () => {
+  try {
+    return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  } catch (e) {
+    return new Date().toISOString().split("T")[0];
+  }
+};
+
+// Format YYYY-MM to readable Month Year
+const formatMonthLabel = (ym) => {
+  if (!ym || ym.length < 7) return ym;
+  const [y, m] = ym.split("-");
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const mIdx = parseInt(m, 10) - 1;
+  return `${months[mIdx] || m} ${y}`;
+};
+
 // 📲 WHATSAPP TEMPLATE GENERATOR (5 HIGH-CONVERTING TEMPLATES)
 const buildWhatsAppTemplate = (type, lead, callerName) => {
   const name = lead?.["Name"] || "Sir";
@@ -264,6 +283,8 @@ const buildWhatsAppTemplate = (type, lead, callerName) => {
 };
 
 export default function KhushaliCallerCRM() {
+  const todayDate = getISTTodayDate();
+
   const [selectedProfile, setSelectedProfile] = useState("piyush");
   const [password, setPassword] = useState("");
   const [loggedInCaller, setLoggedInCaller] = useState(null);
@@ -273,6 +294,8 @@ export default function KhushaliCallerCRM() {
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("today");
   const [adminCallerFilter, setAdminCallerFilter] = useState("all"); // 'all' | 'piyush' | 'garv'
+  const [selectedMonth, setSelectedMonth] = useState(todayDate.slice(0, 7)); // 'YYYY-MM'
+  const [showDailyBreakdown, setShowDailyBreakdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // ⚡ Power Auto-Dialer State
@@ -325,8 +348,6 @@ export default function KhushaliCallerCRM() {
     budget: "",
     chemicals: ""
   });
-
-  const todayDate = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     const saved = sessionStorage.getItem("khushali_active_caller");
@@ -383,6 +404,21 @@ export default function KhushaliCallerCRM() {
       }
     });
     return list;
+  };
+
+  // Helper to extract all call dates (YYYY-MM-DD) for a lead
+  const getLeadCallDates = (lead) => {
+    const dates = [];
+    const allNotes = FOLLOWUP_FLOW.map(f => String(lead[f.noteCol] || "")).join(" ");
+    const matches = allNotes.match(/\[(\d{4}-\d{2}-\d{2})/g);
+    if (matches && matches.length > 0) {
+      matches.forEach((m) => dates.push(m.replace("[", "")));
+    }
+    const lastCall = lead["Last_Call_Date"] ? String(lead["Last_Call_Date"]).split("T")[0] : "";
+    if (lastCall && !dates.includes(lastCall)) {
+      dates.push(lastCall);
+    }
+    return dates;
   };
 
   // FETCH SINGLE CALLER OR BOTH CALLERS (FOR ADMIN)
@@ -447,9 +483,24 @@ export default function KhushaliCallerCRM() {
     }
   }, [loggedInCaller]);
 
-  // 📊 ADMIN & CALLER PERFORMANCE METRICS
+  // Available Months Dropdown List
+  const availableMonths = useMemo(() => {
+    const monthSet = new Set([todayDate.slice(0, 7)]);
+    leads.forEach((l) => {
+      const d1 = l["Day_1_Date"] ? String(l["Day_1_Date"]).slice(0, 7) : "";
+      const lc = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).slice(0, 7) : "";
+      const ts = l["Timestamp"] ? String(l["Timestamp"]).slice(0, 7) : "";
+      if (/^\d{4}-\d{2}$/.test(d1)) monthSet.add(d1);
+      if (/^\d{4}-\d{2}$/.test(lc)) monthSet.add(lc);
+      if (/^\d{4}-\d{2}$/.test(ts)) monthSet.add(ts);
+    });
+    return Array.from(monthSet).sort((a, b) => b.localeCompare(a));
+  }, [leads, todayDate]);
+
+  // 📊 DAILY + MONTHLY PERFORMANCE & DATE-WISE BREAKDOWN
   const performanceStats = useMemo(() => {
-    const calcForList = (list, targetRev = 13500) => {
+    const calcForList = (list, targetRev = 15000) => {
+      // Daily Metrics
       let callsCount = 0;
       let ordersCount = 0;
       let revenue = 0;
@@ -457,12 +508,23 @@ export default function KhushaliCallerCRM() {
       let overdueCount = 0;
       let hotCount = 0;
 
+      // Monthly Metrics (for selectedMonth)
+      let monthlyCalls = 0;
+      let monthlyUniqueLeads = 0;
+      let monthlyNewLeads = 0;
+      let monthlyOrders = 0;
+      let monthlyRevenue = 0;
+      let monthlyOfficeVisits = 0;
+
       list.forEach((l) => {
         const status = l["Call_Status"] || "New";
         const isClosed = status === "Order Confirmed" || status === "Not Interested";
         const lastCall = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
         const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
+        const day1Date = l["Day_1_Date"] ? String(l["Day_1_Date"]).split("T")[0] : "";
+        const tsDate = l["Timestamp"] ? String(l["Timestamp"]).split("T")[0] : "";
 
+        // 1. Today's Stats
         if (lastCall === todayDate) {
           callsCount += 1;
           if (status === "Order Confirmed") {
@@ -473,18 +535,92 @@ export default function KhushaliCallerCRM() {
         if (!isClosed && status === "Planning to Visit Office") officeVisits += 1;
         if (!isClosed && nextDate && nextDate < todayDate) overdueCount += 1;
         if (!isClosed && getLeadPriority(l) === "HOT") hotCount += 1;
+
+        // 2. Monthly Stats
+        const callDates = getLeadCallDates(l);
+        const callsInMonth = callDates.filter((d) => d.startsWith(selectedMonth)).length;
+        if (callsInMonth > 0) {
+          monthlyCalls += callsInMonth;
+          monthlyUniqueLeads += 1;
+        }
+
+        const createdDate = day1Date || tsDate;
+        if (createdDate && createdDate.startsWith(selectedMonth)) {
+          monthlyNewLeads += 1;
+        }
+
+        const orderDate = lastCall || day1Date || tsDate;
+        if (status === "Order Confirmed" && orderDate && orderDate.startsWith(selectedMonth)) {
+          monthlyOrders += 1;
+          monthlyRevenue += parseFloat(l["Order_Amount"] || l["Amount"] || 0);
+        }
+
+        const allNotes = FOLLOWUP_FLOW.map((f) => String(l[f.noteCol] || "")).join(" ");
+        if (
+          (status === "Planning to Visit Office" && (nextDate.startsWith(selectedMonth) || lastCall.startsWith(selectedMonth))) ||
+          allNotes.includes(`OFFICE VISIT: ${selectedMonth}`)
+        ) {
+          monthlyOfficeVisits += 1;
+        }
       });
 
       const revProgress = Math.min(100, Math.round((revenue / targetRev) * 100));
-      return { callsCount, ordersCount, revenue, revProgress, officeVisits, overdueCount, hotCount, totalLeads: list.length };
+      const monthlyConversionRate = monthlyUniqueLeads > 0 ? Math.round((monthlyOrders / monthlyUniqueLeads) * 100) : 0;
+
+      return {
+        callsCount,
+        ordersCount,
+        revenue,
+        revProgress,
+        officeVisits,
+        overdueCount,
+        hotCount,
+        totalLeads: list.length,
+        monthlyCalls,
+        monthlyUniqueLeads,
+        monthlyNewLeads,
+        monthlyOrders,
+        monthlyRevenue,
+        monthlyOfficeVisits,
+        monthlyConversionRate
+      };
     };
 
-    const overall = calcForList(leads, loggedInCaller?.dailyTargetRevenue || 13500);
-    const piyushStats = calcForList(leads.filter(l => l._callerId === "piyush"), 13500);
-    const garvStats = calcForList(leads.filter(l => l._callerId === "garv"), 13500);
+    const overall = calcForList(leads, loggedInCaller?.dailyTargetRevenue || 15000);
+    const piyushStats = calcForList(leads.filter((l) => l._callerId === "piyush"), 15000);
+    const garvStats = calcForList(leads.filter((l) => l._callerId === "garv"), 15000);
 
-    return { overall, piyushStats, garvStats };
-  }, [leads, todayDate, loggedInCaller]);
+    // Date-wise breakdown for selectedMonth (Admin View)
+    const dailyMap = {};
+    leads.forEach((l) => {
+      const caller = l._callerId || "piyush";
+      const status = l["Call_Status"] || "New";
+      const lastCall = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
+      const callDates = getLeadCallDates(l);
+
+      callDates.forEach((d) => {
+        if (!d.startsWith(selectedMonth)) return;
+        if (!dailyMap[d]) {
+          dailyMap[d] = { date: d, piyushCalls: 0, garvCalls: 0, orders: 0, revenue: 0 };
+        }
+        if (caller === "piyush") dailyMap[d].piyushCalls += 1;
+        if (caller === "garv") dailyMap[d].garvCalls += 1;
+      });
+
+      if (status === "Order Confirmed" && lastCall && lastCall.startsWith(selectedMonth)) {
+        if (!dailyMap[lastCall]) {
+          dailyMap[lastCall] = { date: lastCall, piyushCalls: 0, garvCalls: 0, orders: 0, revenue: 0 };
+        }
+        dailyMap[lastCall].orders += 1;
+        dailyMap[lastCall].revenue += parseFloat(l["Order_Amount"] || l["Amount"] || 0);
+      }
+    });
+
+    const dailyBreakdownList = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
+    const monthlyMissionProgress = Math.min(100, Math.round((overall.monthlyRevenue / 1000000) * 100));
+
+    return { overall, piyushStats, garvStats, dailyBreakdownList, monthlyMissionProgress };
+  }, [leads, todayDate, loggedInCaller, selectedMonth]);
 
   // ALL TABS LIVE BADGE COUNTS (INCLUDING OFFICE VISITS)
   const tabCounts = useMemo(() => {
@@ -625,7 +761,7 @@ export default function KhushaliCallerCRM() {
     setCustomDateInput("");
     setCustomTimeInput("");
 
-    // Agar customer ke puraane remarks hain, toh Power Dialer / Pitch Assistant me pehle Remarks tab dikhao!
+    // Agar customer ke puraane remarks hain, toh Pitch Assistant me pehle Remarks tab dikhao!
     const existingRemarks = getLeadRemarksList(lead);
     setModalHelperTab(existingRemarks.length > 0 ? "history" : "objections");
   };
@@ -1059,7 +1195,7 @@ export default function KhushaliCallerCRM() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
             <h1 className="text-xl md:text-2xl font-extrabold text-white">
-              {loggedInCaller.name.toUpperCase()} {loggedInCaller.role === "admin" ? "MASTER LEADERBOARD" : "CRM PANEL"}
+              {loggedInCaller.name.toUpperCase()} {loggedInCaller.role === "admin" ? "MASTER REPORT & CRM" : "CRM PANEL"}
             </h1>
             <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full font-semibold">
               {loggedInCaller.whatsappLine}
@@ -1071,7 +1207,7 @@ export default function KhushaliCallerCRM() {
             )}
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Khushali Chemicals (GST: 08PBDPS5444B1ZD) • Power Dialer, Objection Scripts & Live Catalog
+            Khushali Chemicals (GST: 08PBDPS5444B1ZD) • Daily Target: 60 Calls | 4 Orders | ₹15,000/Caller
           </p>
         </div>
 
@@ -1131,68 +1267,199 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
-      {/* 👑 ADMIN MASTER SIDE-BY-SIDE LEADERBOARD (PIYUSH VS GARV) */}
+      {/* 👑 ADMIN FULL PROGRESS REPORT (MONTHLY + DAILY + CALLER LEADERBOARD) */}
       {loggedInCaller.role === "admin" && (
-        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/40 border border-amber-500/30 rounded-3xl p-5 space-y-4 shadow-2xl">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-amber-400" />
-              <h2 className="text-base font-black text-white uppercase tracking-wider">
-                Live Caller Performance Comparison (Piyush vs Garv)
-              </h2>
+        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-amber-500/30 rounded-3xl p-5 space-y-5 shadow-2xl">
+          
+          {/* Report Header & Month / Caller Filters */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-white uppercase tracking-wider">
+                  Complete Sales & Calling Progress Report
+                </h2>
+                <p className="text-[11px] text-slate-400">
+                  Daily Quota (60 Calls / 4 Orders / ₹15k per caller) + Monthly Performance ({formatMonthLabel(selectedMonth)})
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-semibold">Filter Caller Leads:</span>
-              {[
-                { id: "all", label: "Both Callers" },
-                { id: "piyush", label: "Only Piyush" },
-                { id: "garv", label: "Only Garv" }
-              ].map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setAdminCallerFilter(c.id)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                    adminCallerFilter === c.id
-                      ? "bg-amber-500 text-slate-950"
-                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                  }`}
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Month Selector */}
+              <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
+                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[11px] text-slate-400 font-semibold">Month:</span>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
                 >
-                  {c.label}
-                </button>
-              ))}
+                  {availableMonths.map((m) => (
+                    <option key={m} value={m} className="bg-slate-900 text-white">
+                      {formatMonthLabel(m)} ({m})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Caller Table Filter */}
+              <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 p-1 rounded-xl">
+                {[
+                  { id: "all", label: "Both" },
+                  { id: "piyush", label: "Piyush" },
+                  { id: "garv", label: "Garv" }
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setAdminCallerFilter(c.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                      adminCallerFilter === c.id
+                        ? "bg-amber-500 text-slate-950"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* 📅 TEAM COMBINED MONTHLY PROGRESS SUMMARY (₹10 LAKH MISSION) */}
+          <div className="bg-slate-950/90 border border-emerald-500/30 rounded-2xl p-4 space-y-3">
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4" /> Team Monthly Report — {formatMonthLabel(selectedMonth)}
+              </span>
+              <span className="text-xs font-bold text-amber-400">
+                10L Mission Progress: ₹{performanceStats.overall.monthlyRevenue.toLocaleString("en-IN")} / ₹10,00,000 ({performanceStats.monthlyMissionProgress}%)
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-center">
+              <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">Monthly Calls</div>
+                <div className="text-xl font-black text-sky-400 mt-0.5">{performanceStats.overall.monthlyCalls}</div>
+                <div className="text-[10px] text-slate-500">{performanceStats.overall.monthlyUniqueLeads} Unique Leads</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">Monthly Orders</div>
+                <div className="text-xl font-black text-emerald-400 mt-0.5">{performanceStats.overall.monthlyOrders}</div>
+                <div className="text-[10px] text-slate-500">Conv: {performanceStats.overall.monthlyConversionRate}%</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">Monthly Sales</div>
+                <div className="text-xl font-black text-amber-400 mt-0.5">₹{performanceStats.overall.monthlyRevenue.toLocaleString("en-IN")}</div>
+                <div className="text-[10px] text-slate-500">
+                  Avg: ₹{performanceStats.overall.monthlyOrders > 0 ? Math.round(performanceStats.overall.monthlyRevenue / performanceStats.overall.monthlyOrders).toLocaleString("en-IN") : 0}
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">New Leads Added</div>
+                <div className="text-xl font-black text-white mt-0.5">{performanceStats.overall.monthlyNewLeads}</div>
+                <div className="text-[10px] text-slate-500">In {formatMonthLabel(selectedMonth)}</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">Office Visits</div>
+                <div className="text-xl font-black text-indigo-400 mt-0.5">{performanceStats.overall.monthlyOfficeVisits}</div>
+                <div className="text-[10px] text-slate-500">Scheduled/Active</div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">Total Overdue</div>
+                <div className="text-xl font-black text-rose-400 mt-0.5">{performanceStats.overall.overdueCount}</div>
+                <div className="text-[10px] text-slate-500">Needs Follow-up</div>
+              </div>
+            </div>
+
+            <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-emerald-500 to-amber-400 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${performanceStats.monthlyMissionProgress}%` }}
+              />
+            </div>
+          </div>
+
+          {/* 👥 CALLER-WISE SIDE-BY-SIDE (DAILY + MONTHLY BREAKDOWN) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {[
-              { name: "Piyush (SIM 1)", stats: performanceStats.piyushStats },
-              { name: "Garv (SIM 2)", stats: performanceStats.garvStats }
+              { name: "Piyush (WhatsApp SIM 1)", stats: performanceStats.piyushStats, badgeColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
+              { name: "Garv (WhatsApp SIM 2)", stats: performanceStats.garvStats, badgeColor: "text-sky-400 bg-sky-500/10 border-sky-500/30" }
             ].map((caller, idx) => (
-              <div key={idx} className="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-white text-sm">{caller.name}</span>
-                  <span className="text-xs font-bold text-amber-400">
-                    Sales Today: ₹{caller.stats.revenue.toLocaleString("en-IN")} / ₹13,500 ({caller.stats.revProgress}%)
+              <div key={idx} className="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 space-y-3.5">
+                <div className="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800/80 pb-2.5">
+                  <span className={`text-xs font-black px-2.5 py-1 rounded-lg border ${caller.badgeColor}`}>
+                    {caller.name}
+                  </span>
+                  <span className="text-xs font-bold text-slate-300">
+                    Total Database: <b className="text-white">{caller.stats.totalLeads}</b> Leads
                   </span>
                 </div>
-                <div className="grid grid-cols-4 gap-2 text-center bg-slate-900 p-2.5 rounded-xl border border-slate-800/80">
-                  <div>
-                    <div className="text-[10px] text-slate-400">Calls Today</div>
-                    <div className="text-sm font-black text-white">{caller.stats.callsCount}/40</div>
+
+                {/* Today's Scorecard */}
+                <div>
+                  <div className="flex justify-between items-center text-[11px] mb-1.5">
+                    <span className="font-bold text-slate-400 uppercase tracking-wider">Today's Performance</span>
+                    <span className="font-bold text-amber-400">
+                      ₹{caller.stats.revenue.toLocaleString("en-IN")} / ₹15,000 ({caller.stats.revProgress}%)
+                    </span>
                   </div>
-                  <div>
-                    <div className="text-[10px] text-slate-400">Orders Won</div>
-                    <div className="text-sm font-black text-emerald-400">{caller.stats.ordersCount}/2</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-400">Office Visits</div>
-                    <div className="text-sm font-black text-indigo-400">{caller.stats.officeVisits}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-400">Overdue</div>
-                    <div className="text-sm font-black text-rose-400">{caller.stats.overdueCount}</div>
+                  <div className="grid grid-cols-4 gap-2 text-center bg-slate-900 p-2.5 rounded-xl border border-slate-800/80">
+                    <div>
+                      <div className="text-[10px] text-slate-400">Calls Today</div>
+                      <div className="text-sm font-black text-white">{caller.stats.callsCount}/60</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400">Orders Won</div>
+                      <div className="text-sm font-black text-emerald-400">{caller.stats.ordersCount}/4</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400">Office Visits</div>
+                      <div className="text-sm font-black text-indigo-400">{caller.stats.officeVisits}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400">Overdue</div>
+                      <div className="text-sm font-black text-rose-400">{caller.stats.overdueCount}</div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Monthly Scorecard */}
+                <div>
+                  <div className="flex justify-between items-center text-[11px] mb-1.5">
+                    <span className="font-bold text-emerald-400 uppercase tracking-wider">
+                      {formatMonthLabel(selectedMonth)} Total Report
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Conversion: <b className="text-white">{caller.stats.monthlyConversionRate}%</b>
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-500/20">
+                    <div>
+                      <div className="text-[10px] text-slate-400">Monthly Calls</div>
+                      <div className="text-base font-black text-sky-400">{caller.stats.monthlyCalls}</div>
+                      <div className="text-[9px] text-slate-500">{caller.stats.monthlyUniqueLeads} Leads</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400">Monthly Orders</div>
+                      <div className="text-base font-black text-emerald-400">{caller.stats.monthlyOrders}</div>
+                      <div className="text-[9px] text-slate-500">Closed Deals</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400">Monthly Sales</div>
+                      <div className="text-base font-black text-amber-400">₹{caller.stats.monthlyRevenue.toLocaleString("en-IN")}</div>
+                      <div className="text-[9px] text-slate-500">Total Revenue</div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                   <div
                     className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
@@ -1202,10 +1469,65 @@ export default function KhushaliCallerCRM() {
               </div>
             ))}
           </div>
+
+          {/* 📆 DATE-WISE DAILY ACTIVITY LOG FOR SELECTED MONTH */}
+          <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowDailyBreakdown(!showDailyBreakdown)}
+              className="w-full px-4 py-3 flex justify-between items-center text-xs font-bold text-slate-300 hover:bg-slate-900/60 transition"
+            >
+              <span className="flex items-center gap-2">
+                <CalendarCheck className="w-4 h-4 text-emerald-400" />
+                <span>Date-wise Calling & Sales Breakdown ({formatMonthLabel(selectedMonth)} — {performanceStats.dailyBreakdownList.length} Active Days)</span>
+              </span>
+              <span className="flex items-center gap-1 text-amber-400">
+                {showDailyBreakdown ? "Hide Table" : "View Day-by-Day Table"}
+                {showDailyBreakdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </span>
+            </button>
+
+            {showDailyBreakdown && (
+              <div className="overflow-x-auto border-t border-slate-800 max-h-64 overflow-y-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
+                    <tr>
+                      <th className="p-3">Date</th>
+                      <th className="p-3 text-center">Piyush Calls</th>
+                      <th className="p-3 text-center">Garv Calls</th>
+                      <th className="p-3 text-center">Total Team Calls</th>
+                      <th className="p-3 text-center">Orders Won</th>
+                      <th className="p-3 text-right">Sales Value (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {performanceStats.dailyBreakdownList.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-6 text-center text-slate-500">
+                          Is mahine me abhi tak koi call activity record nahi hui hai.
+                        </td>
+                      </tr>
+                    ) : (
+                      performanceStats.dailyBreakdownList.map((day) => (
+                        <tr key={day.date} className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-bold text-white">{day.date}</td>
+                          <td className="p-3 text-center text-emerald-400 font-bold">{day.piyushCalls}</td>
+                          <td className="p-3 text-center text-sky-400 font-bold">{day.garvCalls}</td>
+                          <td className="p-3 text-center font-black text-white">{day.piyushCalls + day.garvCalls}</td>
+                          <td className="p-3 text-center font-bold text-emerald-300">{day.orders}</td>
+                          <td className="p-3 text-right font-black text-amber-400">₹{day.revenue.toLocaleString("en-IN")}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* 🚀 LIVE DAILY SCORECARD */}
+      {/* 🚀 LIVE DAILY SCORECARD (60 CALLS | 4 ORDERS | ₹15,000 TARGET) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center text-xs text-slate-400 font-semibold">
@@ -1457,7 +1779,6 @@ export default function KhushaliCallerCRM() {
                         >
                           <Phone className="w-3.5 h-3.5" />
                         </a>
-                        {/* 📲 1-CLICK MULTI-TEMPLATE WHATSAPP BUTTON */}
                         <button
                           onClick={() => setWaTemplateModalLead(lead)}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 transition text-xs font-bold"
@@ -2114,7 +2435,6 @@ export default function KhushaliCallerCRM() {
                   <div className="overflow-y-auto flex-1 space-y-2.5 pt-3 pr-1">
                     {modalHelperTab === "history" ? (
                       <div className="space-y-3">
-                        {/* Customer Quick Snapshot */}
                         <div className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs space-y-1.5">
                           <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
@@ -2133,7 +2453,6 @@ export default function KhushaliCallerCRM() {
                           </div>
                         </div>
 
-                        {/* Chronological Past Remarks */}
                         <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 pt-1">
                           <CalendarCheck className="w-3.5 h-3.5 text-emerald-400" />
                           <span>Puraani Baat-Cheet (Previous Remarks)</span>
