@@ -977,18 +977,21 @@ export default function KhushaliCallerCRM() {
     setIsPopupMinimized(true);
   };
 
-  const calculateNextFollowUp = (lead, forceSameDay = false) => {
+    const calculateNextFollowUp = (lead, forceSameDay = false) => {
     const currentStage = lead["Current_Stage"] || "Day 1";
     const lastCallDate = lead["Last_Call_Date"] ? String(lead["Last_Call_Date"]).split("T")[0] : "";
+    const existingNextDate = lead["Next_Call_Date"] ? String(lead["Next_Call_Date"]).split("T")[0] : "";
+    
     const idx = FOLLOWUP_FLOW.findIndex((f) => f.stage === currentStage);
     const currentObj = idx !== -1 ? FOLLOWUP_FLOW[idx] : FOLLOWUP_FLOW[0];
 
     const isSameDayRepeat = forceSameDay || (lastCallDate === todayDate);
 
     if (isSameDayRepeat) {
+      const safeNextDate = (!existingNextDate || existingNextDate < todayDate) ? todayDate : existingNextDate;
       return {
         nextStage: currentStage,
-        nextDate: lead["Next_Call_Date"] ? String(lead["Next_Call_Date"]).split("T")[0] : todayDate,
+        nextDate: safeNextDate,
         noteCol: currentObj.noteCol,
         isSameDayRepeat: true
       };
@@ -999,8 +1002,10 @@ export default function KhushaliCallerCRM() {
     }
 
     const nextObj = idx !== -1 ? FOLLOWUP_FLOW[idx + 1] : FOLLOWUP_FLOW[1];
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + (nextObj.days - currentObj.days));
+    
+    const targetDate = new Date(todayDate + "T00:00:00");
+    const gapDays = Math.max(1, nextObj.days - currentObj.days);
+    targetDate.setDate(targetDate.getDate() + gapDays);
 
     return {
       nextStage: nextObj.stage,
@@ -1009,6 +1014,7 @@ export default function KhushaliCallerCRM() {
       isSameDayRepeat: false
     };
   };
+
 
   const handleOpenUpdateModal = (lead) => {
     setActiveLeadModal(lead);
@@ -1027,10 +1033,9 @@ export default function KhushaliCallerCRM() {
     setModalHelperTab(existingRemarks.length > 0 ? "history" : "objections");
   };
 
-  const handleSaveFollowUp = async () => {
+    const handleSaveFollowUp = async () => {
     if (!activeLeadModal || !loggedInCaller) return;
 
-    // Input Validations
     if (callStatusInput === "Order Confirmed") {
       const parsedAmt = parseFloat(orderAmountInput);
       if (!orderAmountInput || isNaN(parsedAmt) || parsedAmt <= 0) {
@@ -1069,12 +1074,16 @@ export default function KhushaliCallerCRM() {
         nextStageVal = currentStage;
       } else if (callStatusInput === "Busy / Call Tomorrow" || callStatusInput === "Ringing / Not Picked") {
         nextStageVal = currentStage;
-        const tmw = new Date();
+        const tmw = new Date(todayDate + "T00:00:00");
         tmw.setDate(tmw.getDate() + 1);
         nextDateVal = tmw.toISOString().split("T")[0];
       } else if (callStatusInput === "Order Confirmed" || callStatusInput === "Not Interested") {
         nextStageVal = "CLOSED";
         nextDateVal = "CLOSED";
+      }
+
+      if (nextDateVal !== "CLOSED" && nextDateVal < todayDate) {
+        nextDateVal = todayDate;
       }
 
       const nowTime = new Date().toTimeString().slice(0, 5);
@@ -1140,7 +1149,6 @@ export default function KhushaliCallerCRM() {
       setOrderAmountInput("");
       setOrderDetailsInput("");
 
-      // Find next due lead immediately after updating current lead
       const { lead: nextDueLead } = findNextActionableLead(updatedLeads, snoozedKeys, currentUniqueKey);
 
       if (autoDialerActive) {
@@ -1155,7 +1163,6 @@ export default function KhushaliCallerCRM() {
           alert("🎉 Aaj ke sabhi due calls complete ho gaye! Auto-Dialer finished.");
         }
       } else {
-        // Automatically bring up Next Call Popup for the next due customer
         if (nextDueLead) {
           setSmartPopupLead(nextDueLead);
           setShowSmartPopup(true);
@@ -1172,6 +1179,7 @@ export default function KhushaliCallerCRM() {
       setSaving(false);
     }
   };
+
 
   // 🚫 IN-APP NEW CUSTOMER SUBMIT WITH DUPLICATE BLOCK
   const handleAddNewCustomer = async (e) => {
