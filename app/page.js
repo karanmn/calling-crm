@@ -465,18 +465,18 @@ export default function KhushaliCallerCRM() {
     return list;
   };
 
-  const getLeadCallDates = (lead) => {
-    const dates = [];
+    const getLeadCallDates = (lead) => {
+    const uniqueDates = new Set();
     const allNotes = FOLLOWUP_FLOW.map(f => String(lead[f.noteCol] || "")).join(" ");
     const matches = allNotes.match(/\[(\d{4}-\d{2}-\d{2})/g);
     if (matches && matches.length > 0) {
-      matches.forEach((m) => dates.push(m.replace("[", "")));
+      matches.forEach((m) => uniqueDates.add(m.replace("[", "")));
     }
     const lastCall = lead["Last_Call_Date"] ? String(lead["Last_Call_Date"]).split("T")[0] : "";
-    if (lastCall && !dates.includes(lastCall)) {
-      dates.push(lastCall);
+    if (lastCall && /^\d{4}-\d{2}-\d{2}$/.test(lastCall)) {
+      uniqueDates.add(lastCall);
     }
-    return dates;
+    return Array.from(uniqueDates);
   };
 
   // Helper to select the next actionable due lead (respects scheduled times & snoozed queue)
@@ -773,15 +773,15 @@ export default function KhushaliCallerCRM() {
         const tsDate = l["Timestamp"] ? String(l["Timestamp"]).split("T")[0] : "";
         const callDates = getLeadCallDates(l);
 
-        // Today's Calls & Orders
+                // Today's Calls & Orders (1 Unique Customer = 1 Call Today, chahe kitni bar bhi update karein)
         if (lastCall === todayDate) {
-          const callsInToday = callDates.filter((d) => d === todayDate).length;
-          callsCount += Math.max(1, callsInToday);
+          callsCount += 1;
           if (status === "Order Confirmed") {
             ordersCount += 1;
             revenue += parseFloat(l["Order_Amount"] || l["Amount"] || 0);
           }
         }
+
         if (!isClosed && status === "Planning to Visit Office") officeVisits += 1;
         if (!isClosed && nextDate && nextDate < todayDate) overdueCount += 1;
         if (!isClosed && getLeadPriority(l) === "HOT") hotCount += 1;
