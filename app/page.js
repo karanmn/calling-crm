@@ -6,7 +6,7 @@ import {
   TrendingUp, Award, IndianRupee, CalendarCheck, Clock,
   Calendar, Edit3, History, Maximize2, Minimize2, Search, 
   Contact, Building2, Zap, BookOpen, ShieldAlert, 
-  Copy, Check, Sparkles, FlaskConical, BarChart3, 
+  Users, Copy, Check, Sparkles, FlaskConical, BarChart3, 
   ChevronDown, ChevronUp, GitMerge, AlertTriangle,
   Package, Trash2, Send
 } from "lucide-react";
@@ -246,6 +246,7 @@ const GOLDEN_CLOSING_LINES = [
   "हम product नहीं, customer का trust जीतने आए हैं।"
 ];
 
+// Gentle Audio Chime for Scheduled Call Alarms
 const playNotificationChime = () => {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -265,6 +266,7 @@ const playNotificationChime = () => {
   } catch (e) {}
 };
 
+// IST Safe Date Helper (YYYY-MM-DD)
 const getISTTodayDate = () => {
   try {
     return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -273,11 +275,13 @@ const getISTTodayDate = () => {
   }
 };
 
+// Normalize Indian phone numbers to last 10 digits for accurate duplicate matching
 const normalizePhone10 = (raw) => {
   const digits = String(raw || "").replace(/[^0-9]/g, "");
   return digits.length >= 10 ? digits.slice(-10) : digits;
 };
 
+// Format YYYY-MM to readable Month Year
 const formatMonthLabel = (ym) => {
   if (!ym || ym.length < 7) return ym;
   const [y, m] = ym.split("-");
@@ -286,6 +290,7 @@ const formatMonthLabel = (ym) => {
   return `${months[mIdx] || m} ${y}`;
 };
 
+// 📲 WHATSAPP TEMPLATE GENERATOR (5 HIGH-CONVERTING TEMPLATES)
 const buildWhatsAppTemplate = (type, lead, callerName) => {
   const name = lead?.["Name"] || "Sir";
   const reqChem = lead?.["आपको कौन कौनसे chemical चाहिए?"] || "Cleaning Raw Materials";
@@ -328,6 +333,7 @@ export default function KhushaliCallerCRM() {
   const [showDailyBreakdown, setShowDailyBreakdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Power Auto-Dialer State
   const [autoDialerActive, setAutoDialerActive] = useState(false);
 
   // Popups & Modals State
@@ -342,16 +348,16 @@ export default function KhushaliCallerCRM() {
   const [waTemplateModalLead, setWaTemplateModalLead] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
 
-  // 📲 WHATSAPP QUOTATION BUILDER MODAL STATE (Moved here from App.jsx + Editable Price While Selecting)
+  // 💬 WHATSAPP QUOTATION MAKER MODAL STATE (Moved from App.jsx + Editable Price on Selection)
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
-  const [quoteCustomerName, setQuoteCustomerName] = useState("");
+  const [quoteCustomerName, setQuoteCustomerName] = useState("Wholesale Buyer");
   const [quoteCustomerPhone, setQuoteCustomerPhone] = useState("");
   const [quoteCustomerCity, setQuoteCustomerCity] = useState("Jaipur, Rajasthan");
   const [quoteItems, setQuoteItems] = useState([
     { id: 1, itemType: "CHEMICAL", productName: PRODUCT_CATALOG[3].name, tier: "tier25", qty: 25, unit: "kg", customPrice: 120 },
-    { id: 2, itemType: "BOTTLE", productName: BOTTLE_CATALOG[0].name, tier: "pcs", qty: 100, unit: "pcs", customPrice: 15 }
+    { id: 2, itemType: "CHEMICAL", productName: PRODUCT_CATALOG[0].name, tier: "tier25", qty: 25, unit: "kg", customPrice: 250 }
   ]);
-
+  
   // Call Update Inputs
   const [callStatusInput, setCallStatusInput] = useState("Interested");
   const [leadPriorityInput, setLeadPriorityInput] = useState("WARM");
@@ -457,6 +463,7 @@ export default function KhushaliCallerCRM() {
     return dates;
   };
 
+  // Live duplicate detector as user types in "Naya Customer" modal
   const liveDuplicateLead = useMemo(() => {
     const typedNorm = normalizePhone10(newLeadForm.number);
     if (typedNorm.length < 8) return null;
@@ -466,6 +473,7 @@ export default function KhushaliCallerCRM() {
     }) || null;
   }, [newLeadForm.number, leads]);
 
+  // FETCH SINGLE CALLER OR BOTH CALLERS (FOR ADMIN)
   const fetchCallerSheet = async () => {
     if (!loggedInCaller) return;
     setLoading(true);
@@ -527,6 +535,7 @@ export default function KhushaliCallerCRM() {
     }
   }, [loggedInCaller]);
 
+  // 🔄 TRIGGER MERGE DUPLICATES IN GOOGLE SHEETS & REFRESH
   const handleMergeDuplicatesNow = async () => {
     if (!loggedInCaller) return;
     setMerging(true);
@@ -546,6 +555,7 @@ export default function KhushaliCallerCRM() {
         )
       );
 
+      // Wait briefly for Apps Script sheet row cleanup, then re-fetch clean data
       setTimeout(async () => {
         await fetchCallerSheet();
         setMerging(false);
@@ -557,8 +567,8 @@ export default function KhushaliCallerCRM() {
     }
   };
 
-  // --- WHATSAPP QUOTATION BUILDER HELPERS ---
-  const openQuotationForLead = (lead = null) => {
+  // 💬 WHATSAPP QUOTATION HELPERS
+  const openQuotationModal = (lead = null) => {
     if (lead) {
       setQuoteCustomerName(lead["Name"] || "Valued Buyer");
       setQuoteCustomerPhone(String(lead["Number"] || lead["Contact Number"] || "").replace(/[^0-9]/g, ""));
@@ -631,7 +641,7 @@ export default function KhushaliCallerCRM() {
     return { rows, totalAmount, gstIncluded, taxableBase };
   }, [quoteItems]);
 
-  const buildQuotationWhatsAppText = () => {
+  const generateQuotationWhatsAppMessage = () => {
     const lines = [
       "*KHUSHALI CHEMICALS - QUOTATION*",
       "📍 Jaipur, Rajasthan | 📞 +91 8905878950",
@@ -640,22 +650,24 @@ export default function KhushaliCallerCRM() {
       `*Client:* ${quoteCustomerName || "Valued Buyer"} (${quoteCustomerCity || "India"})`,
       `*Date:* ${new Date().toLocaleDateString("en-IN")}`,
       "------------------------------------------",
-      "*ITEMS SUMMARY (18% GST Included):*"
+      "*ORDER SUMMARY (18% GST Included):*"
     ];
 
     quoteSummary.rows.forEach((r, idx) => {
       lines.push(`${idx + 1}. *${r.productName}*`);
-      lines.push(`   Qty: ${r.qty} ${r.unit} @ ₹${r.price}/${r.unit} = *₹${r.lineTotal.toLocaleString("en-IN")}*`);
+      lines.push(`   📦 Qty: ${r.qty} ${r.unit} @ Rs.${r.price}/${r.unit}`);
+      lines.push(`   👉 *Total: Rs.${r.lineTotal.toLocaleString("en-IN")}*`);
     });
 
     lines.push("------------------------------------------");
-    lines.push(`💰 *TOTAL PAYABLE: ₹${quoteSummary.totalAmount.toLocaleString("en-IN")}*`);
-    lines.push(`(Incl. 18% GST: ₹${quoteSummary.gstIncluded.toLocaleString("en-IN")})`);
-    lines.push(`\nPrepared by ${loggedInCaller?.name || "Sales Team"} • Reply to confirm order.`);
+    lines.push(`💰 *TOTAL INVOICE VALUE: Rs.${quoteSummary.totalAmount.toLocaleString("en-IN")}*`);
+    lines.push(`(18% GST included: Rs.${quoteSummary.gstIncluded.toLocaleString("en-IN")})`);
+    lines.push("\nTo confirm this order, kindly reply to this message or call 8905878950.");
 
     return lines.join("\n");
   };
 
+  // Available Months Dropdown List
   const availableMonths = useMemo(() => {
     const monthSet = new Set([todayDate.slice(0, 7)]);
     leads.forEach((l) => {
@@ -669,6 +681,7 @@ export default function KhushaliCallerCRM() {
     return Array.from(monthSet).sort((a, b) => b.localeCompare(a));
   }, [leads, todayDate]);
 
+  // 📊 DAILY + MONTHLY PERFORMANCE & DATE-WISE BREAKDOWN
   const performanceStats = useMemo(() => {
     const calcForList = (list, targetRev = 15000) => {
       let callsCount = 0;
@@ -788,6 +801,7 @@ export default function KhushaliCallerCRM() {
     return { overall, piyushStats, garvStats, dailyBreakdownList, monthlyMissionProgress };
   }, [leads, todayDate, loggedInCaller, selectedMonth]);
 
+  // ALL TABS LIVE BADGE COUNTS
   const tabCounts = useMemo(() => {
     let today = 0;
     let calledToday = 0;
@@ -825,6 +839,7 @@ export default function KhushaliCallerCRM() {
     return { today, calledToday, ordersToday, officeVisit, hotLeads, overdue, upcoming, all: baseList.length };
   }, [leads, todayDate, loggedInCaller, adminCallerFilter]);
 
+  // TIME-BASED CALL POPUP ALARM + CHECKER
   useEffect(() => {
     if (!loggedInCaller || leads.length === 0) return;
 
@@ -1050,6 +1065,7 @@ export default function KhushaliCallerCRM() {
     }
   };
 
+  // 🚫 IN-APP NEW CUSTOMER SUBMIT WITH DUPLICATE BLOCK
   const handleAddNewCustomer = async (e) => {
     e.preventDefault();
     if (!loggedInCaller) return;
@@ -1058,6 +1074,7 @@ export default function KhushaliCallerCRM() {
     const cleanNumber = String(newLeadForm.number || "").trim();
     const normNewPhone = normalizePhone10(cleanNumber);
 
+    // Block if duplicate exists in CRM
     const existingLead = leads.find((l) => {
       const existingNorm = normalizePhone10(l["Number"] || l["Contact Number"]);
       return normNewPhone.length >= 8 && existingNorm === normNewPhone;
@@ -1126,6 +1143,7 @@ export default function KhushaliCallerCRM() {
     }
   };
 
+  // IN-APP EDIT CUSTOMER INFO
   const handleOpenEditCustomer = (lead) => {
     setEditLeadForm({
       rowIndex: lead.rowIndex,
@@ -1212,6 +1230,7 @@ export default function KhushaliCallerCRM() {
     setTimeout(() => setCopiedId(null), 1800);
   };
 
+  // FILTERED LEADS FOR CURRENT TAB, CALLER FILTER & SEARCH QUERY
   const filteredLeads = useMemo(() => {
     return leads.filter((l) => {
       if (loggedInCaller?.role === "admin" && adminCallerFilter !== "all") {
@@ -1374,6 +1393,11 @@ export default function KhushaliCallerCRM() {
             <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full font-semibold">
               {loggedInCaller.whatsappLine}
             </span>
+            {autoDialerActive && (
+              <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1 animate-pulse">
+                <Zap className="w-3 h-3" /> Auto-Dialer Active
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-400 mt-1">
             Khushali Chemicals (GST: 08PBDPS5444B1ZD) • Daily Target: 60 Calls | 4 Orders | ₹15,000/Caller
@@ -1381,10 +1405,10 @@ export default function KhushaliCallerCRM() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* WhatsApp Quotation Maker Trigger (Moved from App.jsx to page.js) */}
+          {/* 💬 WHATSAPP QUOTATION MAKER BUTTON (ADDED FROM App.jsx) */}
           <button
-            onClick={() => openQuotationForLead(null)}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black px-3.5 py-2 rounded-xl text-xs transition shadow-md shadow-emerald-500/20"
+            onClick={() => openQuotationModal(null)}
+            className="flex items-center gap-1.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black px-3.5 py-2 rounded-xl text-xs transition shadow-md shadow-emerald-500/20"
           >
             <MessageSquare className="w-3.5 h-3.5" /> WhatsApp Quotation
           </button>
@@ -1408,7 +1432,7 @@ export default function KhushaliCallerCRM() {
             onClick={() => setKnowledgeModalTab("catalog")}
             className="flex items-center gap-1.5 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/40 text-indigo-300 px-3 py-2 rounded-xl text-xs font-bold transition"
           >
-            <BookOpen className="w-3.5 h-3.5" /> Price & Bottles
+            <BookOpen className="w-3.5 h-3.5" /> Price & Formula
           </button>
 
           <button
@@ -1420,15 +1444,16 @@ export default function KhushaliCallerCRM() {
 
           <button
             onClick={() => setNewCustomerModalOpen(true)}
-            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition"
+            className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md shadow-emerald-500/20"
           >
-            <PlusCircle className="w-4 h-4 text-emerald-400" /> Naya Customer
+            <PlusCircle className="w-4 h-4" /> Naya Customer
           </button>
 
           <button
             disabled={merging}
             onClick={handleMergeDuplicatesNow}
             className="flex items-center gap-1.5 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 px-3 py-2 rounded-xl text-xs font-bold transition"
+            title="Sheet me maujood duplicate numbers ko ek row me merge karein"
           >
             <GitMerge className={`w-3.5 h-3.5 ${merging ? "animate-spin" : ""}`} />
             {merging ? "Merging..." : "Merge Duplicates"}
@@ -1450,9 +1475,10 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
-      {/* ADMIN FULL PROGRESS REPORT */}
+      {/* 👑 ADMIN FULL PROGRESS REPORT (MONTHLY + DAILY + CALLER LEADERBOARD) */}
       {loggedInCaller.role === "admin" && (
         <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-amber-500/30 rounded-3xl p-5 space-y-5 shadow-2xl">
+          
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-800 pb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
@@ -1471,6 +1497,7 @@ export default function KhushaliCallerCRM() {
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
                 <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[11px] text-slate-400 font-semibold">Month:</span>
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
@@ -1512,72 +1539,186 @@ export default function KhushaliCallerCRM() {
                 <TrendingUp className="w-4 h-4" /> Team Monthly Report — {formatMonthLabel(selectedMonth)}
               </span>
               <span className="text-xs font-bold text-amber-400">
-                10L Mission: ₹{performanceStats.overall.monthlyRevenue.toLocaleString("en-IN")} / ₹10,00,000 ({performanceStats.monthlyMissionProgress}%)
+                10L Mission Progress: ₹{performanceStats.overall.monthlyRevenue.toLocaleString("en-IN")} / ₹10,00,000 ({performanceStats.monthlyMissionProgress}%)
               </span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-center">
               <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                <div className="text-[10px] text-slate-400 uppercase">Monthly Calls</div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">Monthly Calls</div>
                 <div className="text-xl font-black text-sky-400 mt-0.5">{performanceStats.overall.monthlyCalls}</div>
+                <div className="text-[10px] text-slate-500">{performanceStats.overall.monthlyUniqueLeads} Unique Leads</div>
               </div>
+
               <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                <div className="text-[10px] text-slate-400 uppercase">Monthly Orders</div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">Monthly Orders</div>
                 <div className="text-xl font-black text-emerald-400 mt-0.5">{performanceStats.overall.monthlyOrders}</div>
+                <div className="text-[10px] text-slate-500">Conv: {performanceStats.overall.monthlyConversionRate}%</div>
               </div>
+
               <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                <div className="text-[10px] text-slate-400 uppercase">Monthly Sales</div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">Monthly Sales</div>
                 <div className="text-xl font-black text-amber-400 mt-0.5">₹{performanceStats.overall.monthlyRevenue.toLocaleString("en-IN")}</div>
+                <div className="text-[10px] text-slate-500">
+                  Avg: ₹{performanceStats.overall.monthlyOrders > 0 ? Math.round(performanceStats.overall.monthlyRevenue / performanceStats.overall.monthlyOrders).toLocaleString("en-IN") : 0}
+                </div>
               </div>
+
               <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                <div className="text-[10px] text-slate-400 uppercase">New Leads</div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">New Leads Added</div>
                 <div className="text-xl font-black text-white mt-0.5">{performanceStats.overall.monthlyNewLeads}</div>
+                <div className="text-[10px] text-slate-500">In {formatMonthLabel(selectedMonth)}</div>
               </div>
+
               <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                <div className="text-[10px] text-slate-400 uppercase">Office Visits</div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">Office Visits</div>
                 <div className="text-xl font-black text-indigo-400 mt-0.5">{performanceStats.overall.monthlyOfficeVisits}</div>
+                <div className="text-[10px] text-slate-500">Scheduled/Active</div>
               </div>
+
               <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-                <div className="text-[10px] text-slate-400 uppercase">Overdue</div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase">Total Overdue</div>
                 <div className="text-xl font-black text-rose-400 mt-0.5">{performanceStats.overall.overdueCount}</div>
+                <div className="text-[10px] text-slate-500">Needs Follow-up</div>
               </div>
             </div>
+
+            <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-emerald-500 to-amber-400 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${performanceStats.monthlyMissionProgress}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {[
+              { name: "Piyush (WhatsApp SIM 1)", stats: performanceStats.piyushStats, badgeColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
+              { name: "Garv (WhatsApp SIM 2)", stats: performanceStats.garvStats, badgeColor: "text-sky-400 bg-sky-500/10 border-sky-500/30" }
+            ].map((caller, idx) => (
+              <div key={idx} className="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 space-y-3.5">
+                <div className="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800/80 pb-2.5">
+                  <span className={`text-xs font-black px-2.5 py-1 rounded-lg border ${caller.badgeColor}`}>
+                    {caller.name}
+                  </span>
+                  <span className="text-xs font-bold text-slate-300">
+                    Total Database: <b className="text-white">{caller.stats.totalLeads}</b> Leads
+                  </span>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center text-[11px] mb-1.5">
+                    <span className="font-bold text-slate-400 uppercase tracking-wider">Today's Performance</span>
+                    <span className="font-bold text-amber-400">
+                      ₹{caller.stats.revenue.toLocaleString("en-IN")} / ₹15,000 ({caller.stats.revProgress}%)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-center bg-slate-900 p-2.5 rounded-xl border border-slate-800/80">
+                    <div>
+                      <div className="text-[10px] text-slate-400">Calls Today</div>
+                      <div className="text-sm font-black text-white">{caller.stats.callsCount}/60</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400">Orders Won</div>
+                      <div className="text-sm font-black text-emerald-400">{caller.stats.ordersCount}/4</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400">Office Visits</div>
+                      <div className="text-sm font-black text-indigo-400">{caller.stats.officeVisits}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400">Overdue</div>
+                      <div className="text-sm font-black text-rose-400">{caller.stats.overdueCount}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center text-[11px] mb-1.5">
+                    <span className="font-bold text-emerald-400 uppercase tracking-wider">
+                      {formatMonthLabel(selectedMonth)} Total Report
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Conversion: <b className="text-white">{caller.stats.monthlyConversionRate}%</b>
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-500/20">
+                    <div>
+                      <div className="text-[10px] text-slate-400">Monthly Calls</div>
+                      <div className="text-base font-black text-sky-400">{caller.stats.monthlyCalls}</div>
+                      <div className="text-[9px] text-slate-500">{caller.stats.monthlyUniqueLeads} Leads</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400">Monthly Orders</div>
+                      <div className="text-base font-black text-emerald-400">{caller.stats.monthlyOrders}</div>
+                      <div className="text-[9px] text-slate-500">Closed Deals</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400">Monthly Sales</div>
+                      <div className="text-base font-black text-amber-400">₹{caller.stats.monthlyRevenue.toLocaleString("en-IN")}</div>
+                      <div className="text-[9px] text-slate-500">Total Revenue</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${caller.stats.revProgress}%` }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="bg-slate-950/80 border border-slate-800 rounded-2xl overflow-hidden">
             <button
               type="button"
               onClick={() => setShowDailyBreakdown(!showDailyBreakdown)}
-              className="w-full px-4 py-3 flex justify-between items-center text-xs font-bold text-slate-300 hover:bg-slate-900/60"
+              className="w-full px-4 py-3 flex justify-between items-center text-xs font-bold text-slate-300 hover:bg-slate-900/60 transition"
             >
               <span className="flex items-center gap-2">
                 <CalendarCheck className="w-4 h-4 text-emerald-400" />
-                <span>Date-wise Breakdown ({formatMonthLabel(selectedMonth)})</span>
+                <span>Date-wise Calling & Sales Breakdown ({formatMonthLabel(selectedMonth)} — {performanceStats.dailyBreakdownList.length} Active Days)</span>
               </span>
-              {showDailyBreakdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              <span className="flex items-center gap-1 text-amber-400">
+                {showDailyBreakdown ? "Hide Table" : "View Day-by-Day Table"}
+                {showDailyBreakdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </span>
             </button>
+
             {showDailyBreakdown && (
-              <div className="overflow-x-auto border-t border-slate-800 max-h-60 overflow-y-auto">
+              <div className="overflow-x-auto border-t border-slate-800 max-h-64 overflow-y-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-900 text-slate-400 uppercase text-[10px]">
+                  <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
                     <tr>
                       <th className="p-3">Date</th>
-                      <th className="p-3 text-center">Piyush</th>
-                      <th className="p-3 text-center">Garv</th>
-                      <th className="p-3 text-center">Orders</th>
-                      <th className="p-3 text-right">Sales (₹)</th>
+                      <th className="p-3 text-center">Piyush Calls</th>
+                      <th className="p-3 text-center">Garv Calls</th>
+                      <th className="p-3 text-center">Total Team Calls</th>
+                      <th className="p-3 text-center">Orders Won</th>
+                      <th className="p-3 text-right">Sales Value (₹)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
-                    {performanceStats.dailyBreakdownList.map((day) => (
-                      <tr key={day.date}>
-                        <td className="p-3 font-mono font-bold text-white">{day.date}</td>
-                        <td className="p-3 text-center text-emerald-400 font-bold">{day.piyushCalls}</td>
-                        <td className="p-3 text-center text-sky-400 font-bold">{day.garvCalls}</td>
-                        <td className="p-3 text-center font-bold text-emerald-300">{day.orders}</td>
-                        <td className="p-3 text-right font-black text-amber-400">₹{day.revenue.toLocaleString("en-IN")}</td>
+                    {performanceStats.dailyBreakdownList.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-6 text-center text-slate-500">
+                          Is mahine me abhi tak koi call activity record nahi hui hai.
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      performanceStats.dailyBreakdownList.map((day) => (
+                        <tr key={day.date} className="hover:bg-slate-900/50">
+                          <td className="p-3 font-mono font-bold text-white">{day.date}</td>
+                          <td className="p-3 text-center text-emerald-400 font-bold">{day.piyushCalls}</td>
+                          <td className="p-3 text-center text-sky-400 font-bold">{day.garvCalls}</td>
+                          <td className="p-3 text-center font-black text-white">{day.piyushCalls + day.garvCalls}</td>
+                          <td className="p-3 text-center font-bold text-emerald-300">{day.orders}</td>
+                          <td className="p-3 text-right font-black text-amber-400">₹{day.revenue.toLocaleString("en-IN")}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1586,53 +1727,80 @@ export default function KhushaliCallerCRM() {
         </div>
       )}
 
-      {/* LIVE DAILY SCORECARD */}
+      {/* 🚀 LIVE DAILY SCORECARD */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center text-xs text-slate-400 font-semibold">
             <span>Calls Made Today</span>
             <Phone className="w-4 h-4 text-sky-400" />
           </div>
           <div className="my-2">
             <span className="text-2xl font-black text-white">{performanceStats.overall.callsCount}</span>
-            <span className="text-xs text-slate-500"> / {loggedInCaller.dailyTargetCalls}</span>
+            <span className="text-xs text-slate-500 font-medium"> / {loggedInCaller.dailyTargetCalls} Target</span>
+          </div>
+          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="bg-sky-500 h-1.5 rounded-full transition-all duration-500" 
+              style={{ width: `${Math.min(100, (performanceStats.overall.callsCount / loggedInCaller.dailyTargetCalls) * 100)}%` }}
+            />
           </div>
         </div>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center text-xs text-slate-400 font-semibold">
             <span>Orders Won Today</span>
             <Award className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="my-2">
             <span className="text-2xl font-black text-emerald-400">{performanceStats.overall.ordersCount}</span>
-            <span className="text-xs text-slate-500"> / {loggedInCaller.dailyTargetOrders}</span>
+            <span className="text-xs text-slate-500 font-medium"> / {loggedInCaller.dailyTargetOrders} Target</span>
+          </div>
+          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" 
+              style={{ width: `${Math.min(100, (performanceStats.overall.ordersCount / loggedInCaller.dailyTargetOrders) * 100)}%` }}
+            />
           </div>
         </div>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center text-xs text-slate-400 font-semibold">
             <span>Today's Sales Value</span>
             <IndianRupee className="w-4 h-4 text-amber-400" />
           </div>
           <div className="my-2">
             <span className="text-2xl font-black text-amber-400">₹{performanceStats.overall.revenue.toLocaleString('en-IN')}</span>
+            <span className="text-xs text-slate-500 font-medium"> / ₹{loggedInCaller.dailyTargetRevenue.toLocaleString('en-IN')}</span>
+          </div>
+          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="bg-amber-500 h-1.5 rounded-full transition-all duration-500" 
+              style={{ width: `${performanceStats.overall.revProgress}%` }}
+            />
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-2xl p-4">
+        <div className="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center text-xs text-emerald-400 font-bold">
             <span>Daily Goal Target</span>
-            <TrendingUp className="w-4 h-4" />
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="my-1">
             <div className="text-lg font-black text-white">{performanceStats.overall.revProgress}% Achieved</div>
+            <p className="text-[11px] text-slate-400">
+              {performanceStats.overall.revenue >= loggedInCaller.dailyTargetRevenue 
+                ? "🎉 Target Complete! Bonus Achieved." 
+                : `₹${(loggedInCaller.dailyTargetRevenue - performanceStats.overall.revenue).toLocaleString('en-IN')} baaki hai`}
+            </p>
+          </div>
+          <div className="text-[10px] text-emerald-500/80 font-mono font-semibold uppercase">
+            Khushali 10L Mission
           </div>
         </div>
       </div>
 
-      {/* SEARCH BAR */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex items-center gap-3">
+      {/* 🔍 REAL-TIME SEARCH BAR */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-lg">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
           <input
@@ -1640,34 +1808,43 @@ export default function KhushaliCallerCRM() {
             placeholder="Search karein: Customer Name, Mobile Number, City ya Chemicals..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs md:text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="absolute right-3 top-3 text-slate-400 hover:text-white">
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-3 text-slate-400 hover:text-white"
+              title="Clear search"
+            >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
+        {searchQuery && (
+          <div className="text-xs text-emerald-400 font-semibold px-2 whitespace-nowrap">
+            Showing {filteredLeads.length} matching leads
+          </div>
+        )}
       </div>
 
-      {/* FILTER TABS */}
+      {/* FILTER TABS WITH DYNAMIC LIVE COUNTS */}
       <div className="flex flex-wrap gap-2">
         {[
-          { id: "today", label: "Aaj Ki Calls", count: tabCounts.today, color: "text-emerald-400" },
-          { id: "hot_leads", label: "🔥 Hot Leads", count: tabCounts.hotLeads, color: "text-rose-400" },
-          { id: "office_visit", label: "Office Visits 🏢", count: tabCounts.officeVisit, color: "text-indigo-400" },
-          { id: "called_today", label: "Aaj Hui Calls", count: tabCounts.calledToday, color: "text-sky-400" },
-          { id: "orders_today", label: "Aaj Ke Orders 🏆", count: tabCounts.ordersToday, color: "text-amber-400" },
-          { id: "overdue", label: "Overdue Calls", count: tabCounts.overdue, color: "text-rose-400" },
-          { id: "upcoming", label: "Upcoming Calls", count: tabCounts.upcoming, color: "text-purple-400" },
-          { id: "all", label: "All Leads", count: tabCounts.all, color: "text-slate-300" },
+          { id: "today", label: `Aaj Ki Calls (Due Today)`, count: tabCounts.today, color: "text-emerald-400" },
+          { id: "hot_leads", label: `🔥 Hot Leads`, count: tabCounts.hotLeads, color: "text-rose-400" },
+          { id: "office_visit", label: `Office Visits 🏢`, count: tabCounts.officeVisit, color: "text-indigo-400" },
+          { id: "called_today", label: `Aaj Hui Calls`, count: tabCounts.calledToday, color: "text-sky-400" },
+          { id: "orders_today", label: `Aaj Ke Orders 🏆`, count: tabCounts.ordersToday, color: "text-amber-400" },
+          { id: "overdue", label: `Overdue Calls`, count: tabCounts.overdue, color: "text-rose-400" },
+          { id: "upcoming", label: `Upcoming Calls`, count: tabCounts.upcoming, color: "text-purple-400" },
+          { id: "all", label: `All Leads`, count: tabCounts.all, color: "text-slate-300" },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveFilter(tab.id)}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
               activeFilter === tab.id
-                ? "bg-emerald-500 text-slate-950"
+                ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
                 : "bg-slate-900 text-slate-400 border border-slate-800 hover:text-white"
             }`}
           >
@@ -1687,19 +1864,19 @@ export default function KhushaliCallerCRM() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-slate-900 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider">
-                <th className="p-3.5">Customer & Priority</th>
+                <th className="p-3.5">Customer & Priority (Click Name for History)</th>
                 <th className="p-3.5">City, Budget & Requirement</th>
                 <th className="p-3.5">Status / Stage</th>
                 <th className="p-3.5">Last Call</th>
-                <th className="p-3.5">Next Call</th>
-                <th className="p-3.5 text-right">Quick Actions</th>
+                <th className="p-3.5">Next Call / Visit Time</th>
+                <th className="p-3.5 text-right">Quick Actions & Templates</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {filteredLeads.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-10 text-center text-slate-500 text-xs">
-                    Is filter me koi lead nahi hai.
+                    {searchQuery ? `"${searchQuery}" ke liye koi result nahi mila.` : "Is filter me koi lead nahi hai."}
                   </td>
                 </tr>
               ) : (
@@ -1718,68 +1895,107 @@ export default function KhushaliCallerCRM() {
                         <div 
                           onClick={() => setHistoryModalLead(lead)} 
                           className="font-bold text-white group-hover:text-emerald-400 transition cursor-pointer flex items-center gap-1.5 flex-wrap"
+                          title="Click to view complete discussion history & remarks"
                         >
                           <span className="underline decoration-dotted underline-offset-4">{lead["Name"] || "—"}</span>
+                          <History className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 text-emerald-400" />
                           <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase ${
-                            priority === "HOT" ? "bg-rose-500/20 text-rose-400" :
+                            priority === "HOT" ? "bg-rose-500/20 text-rose-400 border border-rose-500/30" :
                             priority === "COLD" ? "bg-blue-500/20 text-blue-400" :
                             "bg-amber-500/20 text-amber-300"
                           }`}>
                             {priority === "HOT" ? "🔥 HOT" : priority}
                           </span>
+                          {loggedInCaller.role === "admin" && (
+                            <span className="text-[9px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700">
+                              {lead._callerName}
+                            </span>
+                          )}
+                          {status === "Order Confirmed" && (
+                            <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-black">
+                              ₹{lead["Order_Amount"] || ""}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-emerald-400 font-mono mt-0.5">{phoneNum}</div>
                       </td>
                       <td className="p-3.5">
-                        <div className="text-slate-200 text-xs font-semibold">{lead["City"] || "—"}</div>
+                        <div className="text-slate-200 text-xs font-semibold flex items-center gap-2">
+                          <span>{lead["City"] || "—"}</span>
+                          {lead["सर आपका बजट कितना है?"] && (
+                            <span className="text-[10px] text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded">
+                              Budget: ₹{lead["सर आपका बजट कितना है?"]}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-slate-400 truncate max-w-xs mt-0.5">
                           {lead["आपको कौन कौनसे chemical चाहिए?"] || "—"}
                         </div>
                       </td>
                       <td className="p-3.5">
-                        <span className="bg-blue-500/15 text-blue-400 text-xs px-2 py-0.5 rounded font-mono font-bold mr-1">
-                          {stage}
-                        </span>
-                        <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-bold">
-                          {status}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="bg-blue-500/15 text-blue-400 text-xs px-2 py-0.5 rounded font-mono font-bold">
+                            {stage}
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                            status === "Order Confirmed" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
+                            status === "Planning to Visit Office" ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/40" :
+                            status === "Busy / Call Tomorrow" ? "bg-amber-500/20 text-amber-400" :
+                            status === "Ringing / Not Picked" ? "bg-purple-500/20 text-purple-400" :
+                            status === "Same Day Follow-up" ? "bg-sky-500/20 text-sky-400" :
+                            "bg-slate-800 text-slate-300"
+                          }`}>
+                            {status === "Planning to Visit Office" ? "🏢 Office Visit" : status}
+                          </span>
+                        </div>
                       </td>
-                      <td className="p-3.5 text-xs text-slate-400 font-mono">{lastDate}</td>
+                      <td className="p-3.5 text-xs text-slate-400 font-mono">
+                        {lastDate}
+                      </td>
                       <td className="p-3.5">
-                        <div className="text-xs font-mono font-semibold text-amber-300">{nextDate}</div>
-                        {nextTime && <div className="text-[11px] font-mono text-emerald-400">{nextTime}</div>}
+                        <div className="text-xs font-mono font-semibold text-amber-300 flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-amber-400" />
+                          {nextDate}
+                        </div>
+                        {nextTime && (
+                          <div className="text-[11px] font-mono text-emerald-400 font-bold flex items-center gap-1 mt-0.5">
+                            <Clock className="w-3 h-3" />
+                            {nextTime}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3.5 text-right whitespace-nowrap space-x-1.5">
                         <button
                           onClick={() => handleOpenEditCustomer(lead)}
-                          className="inline-block p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-                          title="Edit Details"
+                          className="inline-block p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition text-xs"
+                          title="Edit Customer Details"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <a
                           href={`tel:${phoneNum}`}
-                          className="inline-block p-1.5 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30"
+                          className="inline-block p-1.5 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30 transition text-xs"
                           title="Call Now"
                         >
                           <Phone className="w-3.5 h-3.5" />
                         </a>
                         <button
-                          onClick={() => openQuotationForLead(lead)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-600/20 text-teal-300 hover:bg-teal-600 hover:text-white border border-teal-500/30 text-xs font-bold"
-                          title="Create WhatsApp Quotation for this lead"
+                          onClick={() => openQuotationModal(lead)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-600/20 text-teal-300 hover:bg-teal-600 hover:text-white border border-teal-500/30 transition text-xs font-bold"
+                          title="Create Custom WhatsApp Quotation (Chemicals + Bottles)"
                         >
                           Quote
                         </button>
                         <button
                           onClick={() => setWaTemplateModalLead(lead)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 text-xs font-bold"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 transition text-xs font-bold"
+                          title="Send Sample Kit, Price List or Office Location on WhatsApp"
                         >
-                          <MessageSquare className="w-3.5 h-3.5" /> WA
+                          <MessageSquare className="w-3.5 h-3.5" /> WA Templates
                         </button>
                         <button
                           onClick={() => handleOpenUpdateModal(lead)}
-                          className="bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-bold"
+                          className="bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-bold transition"
                         >
                           Update Call
                         </button>
@@ -1793,7 +2009,7 @@ export default function KhushaliCallerCRM() {
         </div>
       </div>
 
-      {/* 💬 WHATSAPP QUOTATION MAKER MODAL (MOVED FROM App.jsx + LIVE PRICE EDIT ON SELECTION) */}
+      {/* 💬 WHATSAPP QUOTATION MAKER MODAL (CHEMICALS + BOTTLES + CHANGE PRICE ON SELECTION) */}
       {quoteModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-6 relative shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
@@ -1803,63 +2019,67 @@ export default function KhushaliCallerCRM() {
 
             <div className="border-b border-slate-800 pb-3">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                <MessageSquare className="w-3.5 h-3.5" /> WhatsApp Quotation Generator (Chemicals + Bottles)
+                <MessageSquare className="w-3.5 h-3.5" /> WhatsApp Quotation & GST Maker (18% Inc.)
               </span>
               <h3 className="text-xl font-black text-white mt-0.5">Create & Send Quotation</h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">Client Name</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">Buyer / Business Name</label>
                 <input
                   type="text"
                   value={quoteCustomerName}
                   onChange={(e) => setQuoteCustomerName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">WhatsApp Number (10 digits)</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">WhatsApp Number (Optional)</label>
                 <input
                   type="text"
                   value={quoteCustomerPhone}
                   onChange={(e) => setQuoteCustomerPhone(e.target.value.replace(/[^0-9]/g, ""))}
                   placeholder="9876543210"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-emerald-400 font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-emerald-400 font-mono focus:outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">City</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">City & State</label>
                 <input
                   type="text"
                   value={quoteCustomerCity}
                   onChange={(e) => setQuoteCustomerCity(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => addQuoteRow("CHEMICAL")}
-                className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-bold"
-              >
-                + Add Chemical (kg)
-              </button>
-              <button
-                type="button"
-                onClick={() => addQuoteRow("BOTTLE")}
-                className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-bold"
-              >
-                + Add Bottle / Can / Cap (pcs)
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => addQuoteRow("CHEMICAL")}
+                  className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-bold"
+                >
+                  + Add Chemical (kg)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addQuoteRow("BOTTLE")}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-bold"
+                >
+                  + Add Bottle / Can / Cap (pcs)
+                </button>
+              </div>
+              <span className="text-[11px] text-cyan-400">Tip: Price box me rate direct change kar sakte hain</span>
             </div>
 
             <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
               {quoteSummary.rows.map((row) => (
                 <div key={row.id} className="bg-slate-950 border border-slate-800 rounded-2xl p-3 grid grid-cols-1 sm:grid-cols-12 gap-2 items-center text-xs">
                   <div className="sm:col-span-5">
+                    <label className="block text-[9px] text-slate-500 mb-0.5">Select Item</label>
                     <select
                       value={row.productName}
                       onChange={(e) => updateQuoteRow(row.id, { productName: e.target.value })}
@@ -1873,127 +2093,180 @@ export default function KhushaliCallerCRM() {
 
                   {row.itemType === "CHEMICAL" ? (
                     <div className="sm:col-span-2">
+                      <label className="block text-[9px] text-slate-500 mb-0.5">Price Slab</label>
                       <select
                         value={row.tier}
                         onChange={(e) => updateQuoteRow(row.id, { tier: e.target.value })}
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-cyan-300 text-xs font-mono"
                       >
-                        <option value="tier5">5kg Slab</option>
-                        <option value="tier25">25kg Slab</option>
-                        <option value="tier50">50kg Slab</option>
+                        <option value="tier5">5kg Rate</option>
+                        <option value="tier25">25kg Rate</option>
+                        <option value="tier50">50kg Rate</option>
                       </select>
                     </div>
                   ) : (
-                    <div className="sm:col-span-2 text-center text-[10px] text-indigo-300 font-mono">
+                    <div className="sm:col-span-2 text-center text-[10px] text-indigo-300 font-mono pt-3">
                       Bottle / Cap
                     </div>
                   )}
 
                   <div className="sm:col-span-2">
+                    <label className="block text-[9px] text-slate-500 mb-0.5">Qty ({row.unit})</label>
                     <input
                       type="number"
                       min="1"
                       value={row.qty}
                       onChange={(e) => updateQuoteRow(row.id, { qty: e.target.value })}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-white font-mono text-center"
-                      title="Quantity"
                     />
                   </div>
 
-                  {/* EDITABLE PRICE RIGHT WHILE SELECTING */}
                   <div className="sm:col-span-2">
+                    <label className="block text-[9px] text-emerald-400 mb-0.5">Rate (₹/{row.unit})</label>
                     <input
                       type="number"
                       step="any"
                       value={row.customPrice}
                       onChange={(e) => updateQuoteRow(row.id, { customPrice: e.target.value })}
-                      className="w-full bg-slate-900 border border-emerald-600/70 rounded-lg px-2 py-2 text-emerald-400 font-mono font-bold text-right"
+                      className="w-full bg-slate-900 border border-emerald-600/80 rounded-lg px-2 py-2 text-emerald-400 font-mono font-bold text-right"
                       title="Change price directly while selecting"
                     />
                   </div>
 
-                  <div className="sm:col-span-1 flex items-center justify-end gap-1">
-                    <button
-                      type="button"
-                      onClick={() => removeQuoteRow(row.id)}
-                      className="p-1.5 text-rose-400 hover:bg-rose-950/60 rounded-lg"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  <div className="sm:col-span-1 flex items-center justify-end pt-3">
+                    {quoteSummary.rows.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeQuoteRow(row.id)}
+                        className="p-1.5 text-rose-400 hover:bg-rose-950/60 rounded-lg"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-wrap justify-between items-center gap-3">
-              <div className="text-xs text-slate-400">
-                Incl. 18% GST: <span className="font-mono text-slate-200">₹{quoteSummary.gstIncluded.toLocaleString("en-IN")}</span>
+            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-1.5 text-xs">
+              <div className="flex justify-between text-slate-400">
+                <span>Base Taxable Amount:</span>
+                <span className="font-mono">Rs.{quoteSummary.taxableBase.toLocaleString("en-IN")}</span>
               </div>
-              <div className="text-lg font-black text-emerald-400 font-mono">
-                Total: ₹{quoteSummary.totalAmount.toLocaleString("en-IN")}
+              <div className="flex justify-between text-slate-400">
+                <span>GST (18% included in rates):</span>
+                <span className="font-mono">Rs.{quoteSummary.gstIncluded.toLocaleString("en-IN")}</span>
+              </div>
+              <div className="pt-2 border-t border-slate-800 flex justify-between items-baseline text-sm font-bold text-white">
+                <span>Total Payable:</span>
+                <span className="text-xl font-black text-emerald-400 font-mono">
+                  Rs.{quoteSummary.totalAmount.toLocaleString("en-IN")}
+                </span>
               </div>
             </div>
 
-            <div className="flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => handleCopyText(buildQuotationWhatsAppText(), "quote_copy")}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1.5"
-              >
-                {copiedId === "quote_copy" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                {copiedId === "quote_copy" ? "Copied!" : "Copy Quote"}
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <a
-                href={`https://wa.me/${quoteCustomerPhone.length === 10 ? "91" + quoteCustomerPhone : quoteCustomerPhone}?text=${encodeURIComponent(buildQuotationWhatsAppText())}`}
+                href={`https://wa.me/${quoteCustomerPhone.length === 10 ? "91" + quoteCustomerPhone : quoteCustomerPhone}?text=${encodeURIComponent(generateQuotationWhatsAppMessage())}`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                className="py-3 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 text-xs"
               >
                 <Send className="w-4 h-4" /> Send on WhatsApp
               </a>
+              <button
+                type="button"
+                onClick={() => handleCopyText(generateQuotationWhatsAppMessage(), "quote_copy")}
+                className="py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 transition flex items-center justify-center gap-2 text-xs"
+              >
+                {copiedId === "quote_copy" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                {copiedId === "quote_copy" ? "Quotation Copied!" : "Copy Quotation Text"}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* WHATSAPP TEMPLATES MODAL */}
+      {/* 📲 1-CLICK WHATSAPP MULTI-TEMPLATE DRAWER MODAL */}
       {waTemplateModalLead && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4">
             <button onClick={() => setWaTemplateModalLead(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
+
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5" /> 1-Click WhatsApp Templates
               </span>
               <h3 className="text-xl font-black text-white mt-0.5">{waTemplateModalLead["Name"]}</h3>
+              <p className="text-xs text-slate-400 font-mono">{waTemplateModalLead["Number"] || waTemplateModalLead["Contact Number"]}</p>
             </div>
+
             <div className="space-y-2.5 max-h-[65vh] overflow-y-auto pr-1">
               {[
-                { id: "sample_kit", title: "📦 Sample / Trial Kit Pitch", desc: "Ready-to-mix compound + dilution ratios" },
-                { id: "price_list", title: "💰 Full Catalog Price List", desc: "All rates per kg incl. 18% GST" },
-                { id: "office_visit", title: "🏢 Jaipur Office Visit Details", desc: "Scheduled visit & address" },
-                { id: "trust_proof", title: "🛡️ Trust & Founder Proof", desc: "20+ states dispatch & GST details" },
-                { id: "followup", title: "📞 Follow-up Reminder", desc: "Polite quotation follow-up" }
+                {
+                  id: "sample_kit",
+                  title: "📦 Sample / Trial Kit Pitch (High Converting)",
+                  desc: "Ready-to-mix compound pitch + dilution ratios + trial kit dispatch offer",
+                  badge: "Best for New/Doubtful Leads"
+                },
+                {
+                  id: "price_list",
+                  title: "💰 Full Catalog Price List & Ratios (Per Kg Incl. GST)",
+                  desc: "All 12 products (5Kg / 25Kg / 50Kg slabs) + GST 08PBDPS5444B1ZD",
+                  badge: "Official Rate Card"
+                },
+                {
+                  id: "office_visit",
+                  title: "🏢 Jaipur Office Visit Invitation & Details",
+                  desc: "Scheduled date/time confirmation + Jaipur office address & contact",
+                  badge: "Office Visit"
+                },
+                {
+                  id: "trust_proof",
+                  title: "🛡️ Company Verification & Founder Story (@rohitsam.0)",
+                  desc: "20+ states supply proof, GST details & 1-compound technology trust builder",
+                  badge: "Overcome Trust Issue"
+                },
+                {
+                  id: "followup",
+                  title: "📞 Standard Follow-up & Order Dispatch Reminder",
+                  desc: "Quick polite follow-up for quotation shared earlier",
+                  badge: "Quick Reminder"
+                }
               ].map((tpl) => {
                 const phone = String(waTemplateModalLead["Number"] || waTemplateModalLead["Contact Number"] || "").replace(/[^0-9]/g, "");
                 const msg = buildWhatsAppTemplate(tpl.id, waTemplateModalLead, loggedInCaller.name);
                 return (
-                  <div key={tpl.id} className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-2">
-                    <div>
-                      <div className="text-xs font-extrabold text-white">{tpl.title}</div>
-                      <div className="text-[11px] text-slate-400">{tpl.desc}</div>
+                  <div key={tpl.id} className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex flex-col gap-2 hover:border-emerald-500/40 transition">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <div className="text-xs font-extrabold text-white">{tpl.title}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">{tpl.desc}</div>
+                      </div>
+                      <span className="text-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold whitespace-nowrap">
+                        {tpl.badge}
+                      </span>
                     </div>
-                    <a
-                      href={`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={() => setWaTemplateModalLead(null)}
-                      className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black"
-                    >
-                      Send
-                    </a>
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        onClick={() => handleCopyText(msg, tpl.id)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center gap-1"
+                      >
+                        {copiedId === tpl.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        {copiedId === tpl.id ? "Copied" : "Copy Text"}
+                      </button>
+                      <a
+                        href={`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => setWaTemplateModalLead(null)}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black flex items-center gap-1.5 shadow-md shadow-emerald-500/20"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Send on WhatsApp
+                      </a>
+                    </div>
                   </div>
                 );
               })}
@@ -2002,45 +2275,67 @@ export default function KhushaliCallerCRM() {
         </div>
       )}
 
-      {/* KNOWLEDGE BASE MODAL (CHEMICALS + BOTTLES + 12 OBJECTIONS) */}
+      {/* 📖 KNOWLEDGE BASE MODAL: PRICE CATALOG + BOTTLES + 12 OBJECTION SCRIPTS */}
       {knowledgeModalTab && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-6 relative shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
             <button onClick={() => setKnowledgeModalTab(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
-            <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-3">
-              <button
-                onClick={() => setKnowledgeModalTab("catalog")}
-                className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 ${
-                  knowledgeModalTab === "catalog" ? "bg-indigo-500 text-white" : "bg-slate-950 text-slate-400"
-                }`}
-              >
-                <FlaskConical className="w-4 h-4" /> Chemicals & Bottles Catalog
-              </button>
-              <button
-                onClick={() => setKnowledgeModalTab("objections")}
-                className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 ${
-                  knowledgeModalTab === "objections" ? "bg-purple-500 text-white" : "bg-slate-950 text-slate-400"
-                }`}
-              >
-                <ShieldAlert className="w-4 h-4" /> 12 Objection Scripts
-              </button>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setKnowledgeModalTab("catalog")}
+                  className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition ${
+                    knowledgeModalTab === "catalog"
+                      ? "bg-indigo-500 text-white"
+                      : "bg-slate-950 text-slate-400 border border-slate-800"
+                  }`}
+                >
+                  <FlaskConical className="w-4 h-4" /> Price List & Formulation Ratios (12 Products + Bottles)
+                </button>
+                <button
+                  onClick={() => setKnowledgeModalTab("objections")}
+                  className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition ${
+                    knowledgeModalTab === "objections"
+                      ? "bg-purple-500 text-white"
+                      : "bg-slate-950 text-slate-400 border border-slate-800"
+                  }`}
+                >
+                  <ShieldAlert className="w-4 h-4" /> 12 Objection Scripts & Closing Psychology
+                </button>
+              </div>
             </div>
+
             <div className="overflow-y-auto flex-1 pr-1 space-y-4">
               {knowledgeModalTab === "catalog" ? (
-                <>
+                <div className="space-y-4">
+                  <div className="bg-indigo-950/40 border border-indigo-500/30 p-3.5 rounded-2xl flex flex-wrap justify-between items-center gap-2 text-xs">
+                    <div>
+                      <span className="font-bold text-indigo-300">Khushali Chemicals Official Catalog:</span>{" "}
+                      <span className="text-slate-300">All rates are PER KG and INCLUDING 18% GST.</span>
+                    </div>
+                    <span className="font-mono text-emerald-400 font-bold">GST: 08PBDPS5444B1ZD | Contact: 8905878950</span>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {PRODUCT_CATALOG.map((prod, i) => (
-                      <div key={i} className="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl space-y-1">
-                        <div className="font-extrabold text-white text-sm">{prod.name}</div>
-                        <div className="text-xs font-mono text-amber-400">{prod.slabs}</div>
-                        <div className="text-[11px] text-emerald-400 font-mono">{prod.ratio}</div>
+                      <div key={i} className="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl space-y-1.5">
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="font-extrabold text-white text-sm">{prod.name}</h4>
+                          <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-mono font-bold">
+                            {prod.ratio}
+                          </span>
+                        </div>
+                        <div className="text-xs font-mono text-amber-400 font-bold">{prod.slabs}</div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">{prod.instructions}</p>
                       </div>
                     ))}
                   </div>
+
                   <div className="pt-2">
-                    <h4 className="text-xs font-black uppercase text-indigo-400 mb-2 flex items-center gap-1.5">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-indigo-400 mb-2.5 flex items-center gap-1.5">
                       <Package className="w-4 h-4" /> Bottles, Cans, Pumps & Caps (18% GST Included)
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
@@ -2052,15 +2347,55 @@ export default function KhushaliCallerCRM() {
                       ))}
                     </div>
                   </div>
-                </>
+
+                  <div className="bg-amber-950/30 border border-amber-500/30 p-4 rounded-2xl space-y-1.5 text-xs">
+                    <div className="font-black text-amber-400 uppercase tracking-wider">⚠️ महत्वपूर्ण फॉर्मूलेशन सुझाव (Important Mixing Rules):</div>
+                    <p className="text-slate-300">• <b>नमक का उपयोग (Industrial Salt):</b> गाढ़ापन लाने के लिए नमक को हमेशा पहले पानी में पूरी तरह घोल लें, उसके बाद ही कंसन्ट्रेट डालें।</p>
+                    <p className="text-slate-300">• <b>विश्राम अवधि (24 Hours Resting):</b> हैंडवाश, डिशवॉश और फैब्रिक वॉश को बनाने के तुरंत बाद पैक न करें। कम से कम 24 घंटे स्थिर छोड़ दें ताकि झाग खत्म हो जाए और उत्पाद पारदर्शी (Clear) दिखे।</p>
+                    <p className="text-slate-300">• <b>ग्लास क्लीनर (0 TDS Water):</b> ग्लास क्लीनर के लिए सादा RO पानी उपयोग न करें (कांच पर निशान पड़ सकते हैं)। हमेशा 0 TDS वाला बैटरी/DM पानी ही लें।</p>
+                  </div>
+                </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {OBJECTION_SCRIPTS.map((obj) => (
-                    <div key={obj.id} className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-1.5">
-                      <div className="text-xs font-black text-purple-400">{obj.title}</div>
-                      <p className="text-xs text-emerald-300 leading-relaxed">"{obj.reply}"</p>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="bg-rose-950/30 border border-rose-500/30 p-3.5 rounded-2xl text-xs space-y-1">
+                      <div className="font-black text-rose-400 uppercase">❌ कभी मत बोलो (Never Say):</div>
+                      <p className="text-slate-300">• "Sir Buy कर लो" / "Offer खत्म हो जाएगा"</p>
+                      <p className="text-slate-300">• "जल्दी Decision लो" / "Trust कर लो"</p>
+                      <div className="font-black text-emerald-400 uppercase pt-2">✅ हमेशा बोलो (Always Say):</div>
+                      <p className="text-slate-300">• "आपकी बात बिल्कुल सही है। अगर मैं आपकी जगह होता तो शायद मैं भी यही सोचता।"</p>
+                      <p className="text-slate-300">• "मैं आपको convince नहीं, clarify करना चाहता हूँ।"</p>
                     </div>
-                  ))}
+                    <div className="bg-amber-950/30 border border-amber-500/30 p-3.5 rounded-2xl text-xs space-y-1">
+                      <div className="font-black text-amber-400 uppercase">🏆 5 Golden Closing Lines:</div>
+                      {GOLDEN_CLOSING_LINES.map((line, idx) => (
+                        <p key={idx} className="text-slate-200 font-medium">• "{line}"</p>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {OBJECTION_SCRIPTS.map((obj) => (
+                      <div key={obj.id} className="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-black text-purple-400">{obj.title}</span>
+                          <button
+                            onClick={() => handleCopyText(obj.reply, `obj_${obj.id}`)}
+                            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded flex items-center gap-1"
+                          >
+                            {copiedId === `obj_${obj.id}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                            Copy
+                          </button>
+                        </div>
+                        <div className="text-[11px] text-rose-300 bg-rose-950/30 px-2.5 py-1 rounded-lg border border-rose-800/30">
+                          <b>Customer:</b> "{obj.customer}"
+                        </div>
+                        <p className="text-xs text-emerald-300 leading-relaxed font-medium">
+                          <b>Caller Reply:</b> "{obj.reply}"
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -2068,40 +2403,104 @@ export default function KhushaliCallerCRM() {
         </div>
       )}
 
-      {/* SMART POPUP */}
+      {/* SMART CALL POPUP (SNOOZE TO LAST & SLEEK MINIMIZE BAR) */}
       {showSmartPopup && smartPopupLead && !activeLeadModal && !historyModalLead && !quoteModalOpen && (
         isPopupMinimized ? (
           <div
             onClick={() => setIsPopupMinimized(false)}
-            className="fixed bottom-5 right-5 bg-slate-900 border-2 border-emerald-500/80 rounded-2xl px-4 py-3 shadow-2xl z-40 flex items-center gap-3 cursor-pointer"
+            className="fixed bottom-5 right-5 bg-slate-900/95 border-2 border-emerald-500/80 rounded-2xl px-4 py-3 shadow-2xl z-40 flex items-center gap-3 cursor-pointer hover:bg-slate-800 hover:border-emerald-400 transition animate-pulse"
+            title="Click to expand popup"
           >
-            <BellRing className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-white">{smartPopupLead["Name"] || "Next Lead"}</span>
-            <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
-          </div>
-        ) : (
-          <div className="fixed bottom-5 right-5 left-5 md:left-auto md:w-[420px] bg-slate-900 border-2 border-emerald-500 rounded-3xl p-5 shadow-2xl z-40">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-[10px] font-black px-2.5 py-1 rounded-full uppercase bg-emerald-500 text-slate-950 flex items-center gap-1">
-                <BellRing className="w-3 h-3" /> Next Due Call
-              </span>
-              <div className="flex gap-1.5">
-                <button onClick={() => setIsPopupMinimized(true)} className="text-xs bg-slate-800 px-2.5 py-1 rounded-lg">Minimize</button>
-                <button onClick={handleSnooze} className="text-xs bg-amber-950 text-amber-400 px-2.5 py-1 rounded-lg font-bold">Snooze</button>
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+            <div className="flex items-center gap-2">
+              <BellRing className="w-4 h-4 text-amber-400" />
+              <div>
+                <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>Call Minimized: {smartPopupLead["Name"] || "Next Lead"}</span>
+                </div>
+                <div className="text-[10px] text-emerald-400 font-mono">
+                  {smartPopupLead["Number"] || smartPopupLead["Contact Number"]}
+                </div>
               </div>
             </div>
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 mb-4">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPopupMinimized(false);
+              }}
+              className="ml-2 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 px-2.5 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1"
+            >
+              <Maximize2 className="w-3 h-3" /> Expand
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSmartPopup(false);
+                setIsPopupMinimized(false);
+              }}
+              className="text-slate-400 hover:text-white p-1 rounded-lg"
+              title="Close"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="fixed bottom-5 right-5 left-5 md:left-auto md:w-[440px] bg-slate-900 border-2 border-emerald-500 rounded-3xl p-5 shadow-2xl z-40 animate-fade-in">
+            <div className="flex justify-between items-center mb-3">
+              <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase flex items-center gap-1 ${
+                smartPopupLead["Call_Status"] === "Planning to Visit Office"
+                  ? "bg-indigo-500 text-white"
+                  : "bg-emerald-500 text-slate-950"
+              }`}>
+                <BellRing className="w-3 h-3" /> 
+                {smartPopupLead["Call_Status"] === "Planning to Visit Office"
+                  ? `🏢 Office Visit Follow-up${smartPopupLead["Next_Call_Time"] ? " @ " + smartPopupLead["Next_Call_Time"] : ""}`
+                  : smartPopupLead["Next_Call_Time"] ? `Alarm: ${smartPopupLead["Next_Call_Time"]}` : "Next Due Call"}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button 
+                  onClick={() => setIsPopupMinimized(true)} 
+                  className="text-slate-300 hover:text-white text-xs bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
+                >
+                  <Minimize2 className="w-3 h-3" /> Minimize
+                </button>
+                <button 
+                  onClick={handleSnooze} 
+                  className="text-amber-400 hover:text-amber-300 text-xs bg-amber-950/60 border border-amber-800/60 px-2.5 py-1 rounded-lg font-bold transition"
+                >
+                  Snooze (Last me bhejo)
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-3.5 mb-4 space-y-1.5">
               <h3 className="text-lg font-extrabold text-white">{smartPopupLead["Name"] || "Customer"}</h3>
               <p className="text-sm font-mono text-emerald-400">{smartPopupLead["Number"] || smartPopupLead["Contact Number"]}</p>
+              <div className="text-xs text-slate-300">
+                <strong>Requirement:</strong> {smartPopupLead["आपको कौन कौनसे chemical चाहिए?"] || "—"}
+              </div>
+              {smartPopupLead["City"] && (
+                <div className="text-xs text-slate-400"><strong>City:</strong> {smartPopupLead["City"]}</div>
+              )}
             </div>
+
             <div className="grid grid-cols-3 gap-2">
-              <a href={`tel:${smartPopupLead["Number"] || smartPopupLead["Contact Number"]}`} className="flex items-center justify-center gap-1 bg-emerald-500 text-slate-950 font-bold py-2.5 rounded-xl text-xs">
+              <a
+                href={`tel:${smartPopupLead["Number"] || smartPopupLead["Contact Number"]}`}
+                className="flex items-center justify-center gap-1.5 bg-emerald-500 text-slate-950 font-bold py-2.5 rounded-xl text-xs"
+              >
                 <Phone className="w-3.5 h-3.5" /> Call
               </a>
-              <button onClick={() => openQuotationForLead(smartPopupLead)} className="bg-teal-900/60 border border-teal-700 text-teal-200 font-bold py-2.5 rounded-xl text-xs">
-                Quote
+              <button
+                onClick={() => openQuotationModal(smartPopupLead)}
+                className="flex items-center justify-center gap-1.5 bg-teal-950 border border-teal-700 text-teal-300 py-2.5 rounded-xl text-xs font-bold"
+              >
+                <MessageSquare className="w-3.5 h-3.5" /> Quote
               </button>
-              <button onClick={() => handleOpenUpdateModal(smartPopupLead)} className="bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs">
+              <button
+                onClick={() => handleOpenUpdateModal(smartPopupLead)}
+                className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs border border-slate-700"
+              >
                 Update
               </button>
             </div>
@@ -2109,179 +2508,643 @@ export default function KhushaliCallerCRM() {
         )
       )}
 
-      {/* HISTORY MODAL */}
+      {/* REMARKS & TIMELINE DISCUSSION HISTORY MODAL */}
       {historyModalLead && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <button onClick={() => setHistoryModalLead(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-xl font-black text-white">{historyModalLead["Name"]}</h3>
-            <div className="space-y-2">
-              {getLeadRemarksList(historyModalLead).map((r, i) => (
-                <div key={i} className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs">
-                  <span className="font-mono text-emerald-400 font-bold">{r.stage}: </span>
-                  <span className="text-slate-200">{r.note}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* UPDATE CALL MODAL */}
-      {activeLeadModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-6 relative shadow-2xl max-h-[92vh] overflow-y-auto">
-            <button onClick={() => setActiveLeadModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
-              <X className="w-5 h-5" />
-            </button>
-            <h3 className="text-xl font-black text-white mb-4">{activeLeadModal["Name"]}</h3>
-            <div className="space-y-3">
-              <select
-                value={callStatusInput}
-                onChange={(e) => setCallStatusInput(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white"
-              >
-                <option value="Interested">Connected - Interested</option>
-                <option value="Planning to Visit Office">🏢 Planning to Visit Office</option>
-                <option value="Same Day Follow-up">Same Day Follow-up</option>
-                <option value="Busy / Call Tomorrow">Busy / Call Tomorrow</option>
-                <option value="Ringing / Not Picked">Ringing / Not Picked</option>
-                <option value="Order Confirmed">🎉 Order Confirmed</option>
-                <option value="Not Interested">Not Interested</option>
-              </select>
-              {callStatusInput === "Order Confirmed" && (
-                <input
-                  type="number"
-                  placeholder="Order Amount (₹)"
-                  value={orderAmountInput}
-                  onChange={(e) => setOrderAmountInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-emerald-500 rounded-xl px-3 py-2 text-sm text-emerald-300 font-bold"
-                />
-              )}
-              <textarea
-                rows={3}
-                value={callNoteInput}
-                onChange={(e) => setCallNoteInput(e.target.value)}
-                placeholder="Call notes..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white"
-              />
+            <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                  <History className="w-3 h-3" /> Discussion History & Notes
+                </span>
+                <h3 className="text-xl font-black text-white mt-1">{historyModalLead["Name"]}</h3>
+                <p className="text-xs text-slate-400 font-mono mt-0.5">{historyModalLead["Number"] || historyModalLead["Contact Number"]}</p>
+              </div>
               <button
-                disabled={saving}
-                onClick={handleSaveFollowUp}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl"
+                onClick={() => handleOpenEditCustomer(historyModalLead)}
+                className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl font-bold transition"
               >
-                {saving ? "Saving..." : "Save Call & Schedule"}
+                <Edit3 className="w-3.5 h-3.5 text-emerald-400" /> Edit Details
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-2xl border border-slate-800">
+              <div><span className="text-slate-500">City:</span> <span className="font-semibold text-slate-200">{historyModalLead["City"] || "—"}</span></div>
+              <div><span className="text-slate-500">Budget:</span> <span className="font-semibold text-emerald-400">₹{historyModalLead["सर आपका बजट कितना है?"] || "—"}</span></div>
+              <div className="col-span-2 mt-1"><span className="text-slate-500">Requirement:</span> <span className="font-medium text-slate-300">{historyModalLead["आपको कौन कौनसे chemical चाहिए?"] || "—"}</span></div>
+              <div className="col-span-2 mt-1"><span className="text-slate-500">Current Status:</span> <span className="font-bold text-amber-400">{historyModalLead["Call_Status"] || "New"} ({historyModalLead["Current_Stage"] || "Day 1"})</span></div>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                <CalendarCheck className="w-4 h-4 text-emerald-400" /> Cadence Remarks Timeline
+              </h4>
+              <div className="space-y-2.5">
+                {FOLLOWUP_FLOW.map((f, i) => {
+                  const noteContent = historyModalLead[f.noteCol];
+                  if (!noteContent) return null;
+                  return (
+                    <div key={i} className="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] uppercase font-bold bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded font-mono">
+                          {f.stage}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 mt-1 whitespace-pre-wrap leading-relaxed">{noteContent}</p>
+                    </div>
+                  );
+                })}
+
+                {!FOLLOWUP_FLOW.some(f => historyModalLead[f.noteCol]) && (
+                  <div className="p-6 text-center text-xs text-slate-500 bg-slate-950 rounded-xl border border-slate-800">
+                    Abhi tak is customer ka koi previous cadence remark record nahi hua hai.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => {
+                  setHistoryModalLead(null);
+                  handleOpenUpdateModal(historyModalLead);
+                }}
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition"
+              >
+                Log New Call / Update Status
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* NEW CUSTOMER MODAL */}
+      {/* ⏰ UPDATE CALL MODAL (POWER DIALER) WITH PAST REMARKS + OBJECTIONS + RATES ASSISTANT */}
+      {activeLeadModal && (() => {
+        const customerPastRemarks = getLeadRemarksList(activeLeadModal);
+        return (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-5xl w-full p-6 relative shadow-2xl max-h-[92vh] overflow-y-auto">
+              <button onClick={() => setActiveLeadModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* LEFT COLUMN: CALL OUTCOME LOGGING */}
+                <div className="lg:col-span-6 space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        {autoDialerActive ? "⚡ Power Auto-Dialer Session" : "Call Logging"}
+                      </span>
+                      <h3 className="text-xl font-black text-white">{activeLeadModal["Name"]}</h3>
+                      <p className="text-xs text-slate-400 font-mono mt-0.5">
+                        {activeLeadModal["Number"] || activeLeadModal["Contact Number"]} • {activeLeadModal["City"] || "India"}
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <a
+                        href={`tel:${activeLeadModal["Number"] || activeLeadModal["Contact Number"]}`}
+                        className="px-3 py-2 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs flex items-center gap-1"
+                      >
+                        <Phone className="w-3.5 h-3.5" /> Dial
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => openQuotationModal(activeLeadModal)}
+                        className="px-3 py-2 rounded-xl bg-teal-950 hover:bg-teal-900 text-teal-300 font-bold text-xs border border-teal-700 flex items-center gap-1"
+                      >
+                        Quote
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWaTemplateModalLead(activeLeadModal)}
+                        className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs border border-slate-700 flex items-center gap-1"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> Templates
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs flex flex-wrap justify-between gap-2">
+                    <div><span className="text-slate-500">Requirement:</span> <span className="text-emerald-400 font-bold">{activeLeadModal["आपको कौन कौनसे chemical चाहिए?"] || "—"}</span></div>
+                    <div><span className="text-slate-500">Budget:</span> <span className="text-amber-400 font-bold">₹{activeLeadModal["सर आपका बजट कितना है?"] || "—"}</span></div>
+                  </div>
+
+                  {/* PRIORITY SELECTOR */}
+                  <div>
+                    <label className="text-xs font-semibold text-slate-400 block mb-1.5">Lead Priority Tag</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "HOT", label: "🔥 HOT (High Intent)", activeCls: "bg-rose-500/20 border-rose-500 text-rose-300" },
+                        { id: "WARM", label: "🟡 WARM (Follow-up)", activeCls: "bg-amber-500/20 border-amber-500 text-amber-300" },
+                        { id: "COLD", label: "🔵 COLD (Low Priority)", activeCls: "bg-blue-500/20 border-blue-500 text-blue-300" },
+                      ].map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setLeadPriorityInput(p.id)}
+                          className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition ${
+                            leadPriorityInput === p.id
+                              ? p.activeCls
+                              : "bg-slate-950 border-slate-800 text-slate-400"
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-slate-400 block mb-1">Call Outcome / Status *</label>
+                    <select
+                      value={callStatusInput}
+                      onChange={(e) => setCallStatusInput(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 font-medium"
+                    >
+                      <option value="Interested">Connected - Interested (Cadence Flow)</option>
+                      <option value="Planning to Visit Office">🏢 Planning to Visit Office</option>
+                      <option value="Same Day Follow-up">Connected - Same Day Follow-up (Keep Current Stage)</option>
+                      <option value="Busy / Call Tomorrow">Connected - Busy / Call Tomorrow</option>
+                      <option value="Ringing / Not Picked">Ringing / Phone Nahi Uthaya</option>
+                      <option value="Order Confirmed">🎉 Order Confirmed (Booking)</option>
+                      <option value="Not Interested">Not Interested / Closed</option>
+                    </select>
+                  </div>
+
+                  {callStatusInput === "Planning to Visit Office" && (
+                    <div className="p-3.5 bg-indigo-950/40 border border-indigo-500/40 rounded-2xl space-y-3">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-300">
+                        <Building2 className="w-4 h-4 text-indigo-400" />
+                        <span>Office Visit Date & Reminder Time</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="text-[10px] font-semibold text-slate-300 block mb-1">Visit Date *</span>
+                          <input
+                            type="date"
+                            required
+                            value={visitDateInput}
+                            onChange={(e) => setVisitDateInput(e.target.value)}
+                            className="w-full bg-slate-950 border border-indigo-500/40 rounded-xl p-2 text-xs text-white"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-semibold text-slate-300 block mb-1">Reminder Time</span>
+                          <input
+                            type="time"
+                            value={visitTimeInput}
+                            onChange={(e) => setVisitTimeInput(e.target.value)}
+                            className="w-full bg-slate-950 border border-indigo-500/40 rounded-xl p-2 text-xs text-indigo-300 font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {callStatusInput !== "Order Confirmed" && callStatusInput !== "Not Interested" && callStatusInput !== "Planning to Visit Office" && (
+                    <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={customDateTimeEnabled}
+                          onChange={(e) => setCustomDateTimeEnabled(e.target.checked)}
+                          className="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700"
+                        />
+                        <span>Schedule Custom Next Call Date & Time</span>
+                      </label>
+
+                      {customDateTimeEnabled && (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <div>
+                            <span className="text-[10px] font-semibold text-slate-400 block mb-1">Next Date *</span>
+                            <input
+                              type="date"
+                              required
+                              value={customDateInput}
+                              onChange={(e) => setCustomDateInput(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-semibold text-slate-400 block mb-1">Exact Time (Popup Alert)</span>
+                            <input
+                              type="time"
+                              value={customTimeInput}
+                              onChange={(e) => setCustomTimeInput(e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-emerald-400 font-mono"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {callStatusInput === "Order Confirmed" && (
+                    <div className="p-3.5 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl space-y-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-emerald-400 block mb-1">Order Amount (₹) *</label>
+                        <input
+                          type="number"
+                          required
+                          placeholder="e.g. 8500"
+                          value={orderAmountInput}
+                          onChange={(e) => setOrderAmountInput(e.target.value)}
+                          className="w-full bg-slate-950 border border-emerald-500/60 rounded-xl px-3 py-2 text-sm text-emerald-300 font-black"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-300 block mb-1">Ordered Products / Quantity (Kg)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 50kg White Phenyl + 25kg Handwash"
+                          value={orderDetailsInput}
+                          onChange={(e) => setOrderDetailsInput(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-xs font-semibold text-slate-400 block mb-1">Baat-cheet ka Naya Remark / Notes</label>
+                    <textarea
+                      rows={3}
+                      value={callNoteInput}
+                      onChange={(e) => setCallNoteInput(e.target.value)}
+                      placeholder="Customer ne kya kaha? Sample kit bhejna hai ya rate discuss hua..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <button
+                    disabled={saving}
+                    onClick={handleSaveFollowUp}
+                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                  >
+                    {saving
+                      ? "Saving to Sheet..."
+                      : autoDialerActive
+                      ? "Save & Load Next Call ⚡"
+                      : "Save Call & Schedule"}
+                  </button>
+                </div>
+
+                {/* RIGHT COLUMN: LIVE PITCH ASSISTANT (PAST REMARKS + OBJECTIONS + RATES) */}
+                <div className="lg:col-span-6 bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col max-h-[78vh]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                    <span className="text-xs font-black uppercase text-amber-400">Live Pitch Assistant</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setModalHelperTab("history")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition ${
+                          modalHelperTab === "history"
+                            ? "bg-emerald-500 text-slate-950"
+                            : "bg-slate-900 text-slate-300 border border-slate-800 hover:text-white"
+                        }`}
+                      >
+                        <History className="w-3 h-3" />
+                        <span>Remarks ({customerPastRemarks.length})</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalHelperTab("objections")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+                          modalHelperTab === "objections"
+                            ? "bg-purple-500 text-white"
+                            : "bg-slate-900 text-slate-300 border border-slate-800 hover:text-white"
+                        }`}
+                      >
+                        Objections (12)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalHelperTab("catalog")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+                          modalHelperTab === "catalog"
+                            ? "bg-indigo-500 text-white"
+                            : "bg-slate-900 text-slate-300 border border-slate-800 hover:text-white"
+                        }`}
+                      >
+                        Rates & Ratios
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="overflow-y-auto flex-1 space-y-2.5 pt-3 pr-1">
+                    {modalHelperTab === "history" ? (
+                      <div className="space-y-3">
+                        <div className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs space-y-1.5">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                              Customer Profile & Stage
+                            </span>
+                            <span className="text-[10px] font-mono bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded font-bold">
+                              {activeLeadModal["Current_Stage"] || "Day 1"} • {activeLeadModal["Call_Status"] || "New"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1 text-[11px] text-slate-300 pt-1">
+                            <div><span className="text-slate-500">City:</span> {activeLeadModal["City"] || "—"}</div>
+                            <div><span className="text-slate-500">Budget:</span> ₹{activeLeadModal["सर आपका बजट कितना है?"] || "—"}</div>
+                            <div className="col-span-2">
+                              <span className="text-slate-500">Chemicals:</span> {activeLeadModal["आपको कौन कौनसे chemical चाहिए?"] || "—"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 pt-1">
+                          <CalendarCheck className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Puraani Baat-Cheet (Previous Remarks)</span>
+                        </div>
+
+                        {customerPastRemarks.length > 0 ? (
+                          customerPastRemarks.map((rem, idx) => (
+                            <div key={idx} className="p-3 bg-slate-900 rounded-xl border border-emerald-500/20 space-y-1">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-black uppercase bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded font-mono">
+                                  {rem.stage}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed pt-1">
+                                {rem.note}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-6 text-center bg-slate-900/60 rounded-2xl border border-slate-800 space-y-1.5">
+                            <p className="text-xs font-bold text-slate-300">Fresh Lead — Koi Purana Remark Nahi Hai</p>
+                            <p className="text-[11px] text-slate-500">
+                              Is customer se abhi tak koi call log nahi hui hai. Upar "Objections (12)" ya "Rates & Ratios" dekh kar baat shuru karein.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : modalHelperTab === "catalog" ? (
+                      PRODUCT_CATALOG.map((p, idx) => (
+                        <div key={idx} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-white">{p.name}</span>
+                            <span className="text-[10px] text-emerald-400 font-mono">{p.ratio}</span>
+                          </div>
+                          <div className="text-[11px] text-amber-400 font-mono font-bold">{p.slabs}</div>
+                          <div className="text-[10px] text-slate-400">{p.instructions}</div>
+                        </div>
+                      ))
+                    ) : (
+                      OBJECTION_SCRIPTS.map((obj) => (
+                        <div key={obj.id} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+                          <div className="text-xs font-bold text-purple-300">{obj.title}</div>
+                          <p className="text-[11px] text-slate-200 leading-relaxed">"{obj.reply}"</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ➕ IN-APP NEW CUSTOMER CREATION MODAL (WITH DUPLICATE DETECTION & BLOCK) */}
       {newCustomerModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl space-y-4">
             <button onClick={() => setNewCustomerModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-xl font-black text-white">Naya Customer Jodein</h3>
+
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                <Contact className="w-3.5 h-3.5" /> Direct Entry & Google Contacts
+              </span>
+              <h3 className="text-xl font-black text-white mt-0.5">Naya Customer Jodein</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Google Contacts me automatically <b>'CX' suffix</b> ke sath save hoga.</p>
+            </div>
+
             <form onSubmit={handleAddNewCustomer} className="space-y-3">
-              <input
-                type="text"
-                required
-                placeholder="Customer Name *"
-                value={newLeadForm.name}
-                onChange={(e) => setNewLeadForm({ ...newLeadForm, name: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
-              />
-              <input
-                type="text"
-                required
-                placeholder="Mobile Number *"
-                value={newLeadForm.number}
-                onChange={(e) => setNewLeadForm({ ...newLeadForm, number: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-emerald-400 font-mono"
-              />
-              {liveDuplicateLead && (
-                <div className="p-2.5 bg-rose-950/60 border border-rose-500/50 rounded-xl text-xs text-rose-300 flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>Already Exists: {liveDuplicateLead["Name"]}</span>
+              {loggedInCaller.role === "admin" && (
+                <div>
+                  <label className="text-xs font-semibold text-amber-400 block mb-1">Assign Lead to Caller *</label>
+                  <select
+                    value={newLeadForm.targetCaller}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, targetCaller: e.target.value })}
+                    className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-white"
+                  >
+                    <option value="piyush">Piyush (SIM 1 Sheet)</option>
+                    <option value="garv">Garv (SIM 2 Sheet)</option>
+                  </select>
                 </div>
               )}
-              <input
-                type="text"
-                placeholder="City"
-                value={newLeadForm.city}
-                onChange={(e) => setNewLeadForm({ ...newLeadForm, city: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
-              />
-              <input
-                type="text"
-                placeholder="Required Chemicals"
-                value={newLeadForm.chemicals}
-                onChange={(e) => setNewLeadForm({ ...newLeadForm, chemicals: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
-              />
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Customer Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ramesh Sharma"
+                  value={newLeadForm.name}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, name: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Mobile Number *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 9876543210"
+                    value={newLeadForm.number}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, number: e.target.value })}
+                    className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-sm font-mono focus:outline-none ${
+                      liveDuplicateLead
+                        ? "border-rose-500 text-rose-400"
+                        : "border-slate-800 text-emerald-400 focus:border-emerald-500"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Priority</label>
+                  <select
+                    value={newLeadForm.priority}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, priority: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
+                  >
+                    <option value="HOT">🔥 HOT</option>
+                    <option value="WARM">🟡 WARM</option>
+                    <option value="COLD">🔵 COLD</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* LIVE DUPLICATE WARNING BANNER */}
+              {liveDuplicateLead && (
+                <div className="p-3 bg-rose-950/60 border border-rose-500/50 rounded-2xl text-xs space-y-1 animate-fade-in">
+                  <div className="font-black text-rose-400 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Already Exists! Ye Lead Pehle Se Save Hai</span>
+                  </div>
+                  <div className="text-slate-200">
+                    <b>Name:</b> {liveDuplicateLead["Name"] || "—"} ({liveDuplicateLead._callerName || loggedInCaller.name})
+                  </div>
+                  <div className="text-slate-300">
+                    <b>Status:</b> {liveDuplicateLead["Call_Status"] || "New"} ({liveDuplicateLead["Current_Stage"] || "Day 1"})
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">City / Location</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Sikar, Kota"
+                    value={newLeadForm.city}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, city: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Budget (₹)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 15000"
+                    value={newLeadForm.budget}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, budget: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Required Chemicals / Products</label>
+                <input
+                  type="text"
+                  placeholder="e.g. White Phenyl, Toilet Cleaner, Handwash"
+                  value={newLeadForm.chemicals}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, chemicals: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Initial Discussion / Remark</label>
+                <textarea
+                  rows={2}
+                  placeholder="Inquiry notes..."
+                  value={newLeadForm.note}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, note: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
               <button
                 type="submit"
                 disabled={saving || Boolean(liveDuplicateLead)}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl"
+                className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${
+                  liveDuplicateLead
+                    ? "bg-rose-500/20 border border-rose-500/40 text-rose-300 cursor-not-allowed"
+                    : "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20"
+                }`}
               >
-                {liveDuplicateLead ? "Duplicate Blocked" : saving ? "Saving..." : "Customer Add Karein"}
+                {liveDuplicateLead
+                  ? "⚠️ Duplicate Number — Save Blocked"
+                  : saving
+                  ? "Saving & Syncing to Contacts..."
+                  : "Customer Add Karein"}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* EDIT CUSTOMER MODAL */}
+      {/* ✏️ IN-APP DIRECT EDIT CUSTOMER INFO MODAL */}
       {editCustomerModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl space-y-4">
             <button onClick={() => setEditCustomerModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-xl font-black text-white">Customer Details Edit Karein</h3>
+
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Edit Mode</span>
+              <h3 className="text-xl font-black text-white">Customer Details Edit Karein</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Updated details sheet aur Google Contacts dono me sync ho jayegi.</p>
+            </div>
+
             <form onSubmit={handleSaveCustomerEdit} className="space-y-3">
-              <input
-                type="text"
-                required
-                value={editLeadForm.name}
-                onChange={(e) => setEditLeadForm({ ...editLeadForm, name: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
-              />
-              <input
-                type="text"
-                required
-                value={editLeadForm.number}
-                onChange={(e) => setEditLeadForm({ ...editLeadForm, number: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-emerald-400 font-mono"
-              />
-              <input
-                type="text"
-                value={editLeadForm.city}
-                onChange={(e) => setEditLeadForm({ ...editLeadForm, city: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
-              />
-              <input
-                type="text"
-                value={editLeadForm.chemicals}
-                onChange={(e) => setEditLeadForm({ ...editLeadForm, chemicals: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
-              />
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Customer Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editLeadForm.name}
+                  onChange={(e) => setEditLeadForm({ ...editLeadForm, name: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Mobile Number *</label>
+                <input
+                  type="text"
+                  required
+                  value={editLeadForm.number}
+                  onChange={(e) => setEditLeadForm({ ...editLeadForm, number: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-emerald-400 font-mono focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">City</label>
+                  <input
+                    type="text"
+                    value={editLeadForm.city}
+                    onChange={(e) => setEditLeadForm({ ...editLeadForm, city: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">Budget (₹)</label>
+                  <input
+                    type="text"
+                    value={editLeadForm.budget}
+                    onChange={(e) => setEditLeadForm({ ...editLeadForm, budget: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Required Chemicals</label>
+                <input
+                  type="text"
+                  value={editLeadForm.chemicals}
+                  onChange={(e) => setEditLeadForm({ ...editLeadForm, chemicals: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl"
+                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-amber-500/20"
               >
-                {saving ? "Updating..." : "Save Updated Details"}
+                {saving ? "Updating Sheet & Contacts..." : "Save Updated Details"}
               </button>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }
