@@ -147,7 +147,7 @@ const PRODUCT_CATALOG = [
   }
 ];
 
-// 🧴 BOTTLES, CANS, PUMPS & CAPS CATALOG (OCTOBER BOTTLE CATALOG - 18% GST INCLUDED)
+// 🧴 BOTTLES, CANS, PUMPS & CAPS CATALOG (18% GST INCLUDED)
 const BOTTLE_CATALOG = [
   { name: "500ml Floor Cleaner Bottle", rate: 15, moq: 100, unit: "pcs" },
   { name: "500ml Dishwash Bottle", rate: 12, moq: 100, unit: "pcs" },
@@ -275,10 +275,18 @@ const getISTTodayDate = () => {
   }
 };
 
-// Normalize Indian phone numbers to last 10 digits for accurate duplicate matching
+// Normalize Indian phone numbers to last 10 digits
 const normalizePhone10 = (raw) => {
   const digits = String(raw || "").replace(/[^0-9]/g, "");
   return digits.length >= 10 ? digits.slice(-10) : digits;
+};
+
+// Safe WhatsApp URL Builder (Prevents 9191 double country code)
+const buildWhatsAppUrl = (rawPhone, text = "") => {
+  const digits = String(rawPhone || "").replace(/[^0-9]/g, "");
+  if (!digits) return `https://wa.me/?text=${encodeURIComponent(text)}`;
+  const formatted = digits.length === 10 ? `91${digits}` : digits;
+  return `https://wa.me/${formatted}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 };
 
 // Format YYYY-MM to readable Month Year
@@ -340,6 +348,8 @@ export default function KhushaliCallerCRM() {
   const [smartPopupLead, setSmartPopupLead] = useState(null);
   const [showSmartPopup, setShowSmartPopup] = useState(false);
   const [isPopupMinimized, setIsPopupMinimized] = useState(false);
+  const [popupDismissed, setPopupDismissed] = useState(false);
+  const [snoozedKeys, setSnoozedKeys] = useState([]);
   const [activeLeadModal, setActiveLeadModal] = useState(null);
   const [historyModalLead, setHistoryModalLead] = useState(null);
   const [newCustomerModalOpen, setNewCustomerModalOpen] = useState(false);
@@ -348,7 +358,7 @@ export default function KhushaliCallerCRM() {
   const [waTemplateModalLead, setWaTemplateModalLead] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
 
-  // 💬 WHATSAPP QUOTATION MAKER MODAL STATE (Moved from App.jsx + Editable Price on Selection)
+  // 💬 WHATSAPP QUOTATION MAKER MODAL STATE (Chemicals + Bottles + Editable Rate)
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [quoteCustomerName, setQuoteCustomerName] = useState("Wholesale Buyer");
   const [quoteCustomerPhone, setQuoteCustomerPhone] = useState("");
@@ -387,6 +397,8 @@ export default function KhushaliCallerCRM() {
   // Edit Customer Form State
   const [editLeadForm, setEditLeadForm] = useState({
     rowIndex: null,
+    _uniqueKey: "",
+    _sheetUrl: "",
     name: "",
     number: "",
     city: "",
@@ -408,6 +420,8 @@ export default function KhushaliCallerCRM() {
       setLoggedInCaller(profile);
       setLoginError("");
       setPassword("");
+      setPopupDismissed(false);
+      setSnoozedKeys([]);
       sessionStorage.setItem("khushali_active_caller", profile.id);
     } else {
       setLoginError("Password galat hai! Sahi password dalein.");
@@ -420,6 +434,8 @@ export default function KhushaliCallerCRM() {
     setSmartPopupLead(null);
     setShowSmartPopup(false);
     setIsPopupMinimized(false);
+    setPopupDismissed(false);
+    setSnoozedKeys([]);
     setAutoDialerActive(false);
     sessionStorage.removeItem("khushali_active_caller");
   };
@@ -461,6 +477,57 @@ export default function KhushaliCallerCRM() {
       dates.push(lastCall);
     }
     return dates;
+  };
+
+  // Helper to select the next actionable due lead (respects scheduled times & snoozed queue)
+  const findNextActionableLead = (leadList, currentSnoozed = [], excludeKey = null) => {
+    const now = new Date();
+    const currentTimeStr = now.toTimeString().slice(0, 5); // HH:MM
+
+    const openLeads = leadList.filter((l) => {
+      if (excludeKey && l._uniqueKey === excludeKey) return false;
+      const status = l["Call_Status"] || "New";
+      return status !== "Order Confirmed" && status !== "Not Interested";
+    });
+
+    // 1. Exact scheduled alarm due now (Next_Call_Date === today && Next_Call_Time <= now)
+    const exactAlarm = openLeads.find((l) => {
+      const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
+      const nextTime = l["Next_Call_Time"] ? String(l["Next_Call_Time"]).trim() : "";
+      return nextDate === todayDate && nextTime && nextTime <= currentTimeStr;
+    });
+    if (exactAlarm) return { lead: exactAlarm, isAlarm: true };
+
+    // 2. Due leads (not scheduled for a future time later today)
+    const dueLeads = openLeads.filter((l) => {
+      const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
+      const nextTime = l["Next_Call_Time"] ? String(l["Next_Call_Time"]).trim() : "";
+      if (!nextDate) return true;
+      if (nextDate < todayDate) return true;
+      if (nextDate === todayDate) {
+        return !nextTime || nextTime <= currentTimeStr;
+      }
+      return false;
+    });
+
+    if (dueLeads.length === 0) return { lead: null, isAlarm: false };
+
+    // Prefer leads NOT called today & NOT snoozed first
+    const freshDue = dueLeads.filter((l) => {
+      const lc = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
+      return lc !== todayDate && !currentSnoozed.includes(l._uniqueKey);
+    });
+    if (freshDue.length > 0) return { lead: freshDue[0], isAlarm: false };
+
+    // Next: not snoozed (even if called earlier today)
+    const nonSnoozed = dueLeads.filter((l) => !currentSnoozed.includes(l._uniqueKey));
+    if (nonSnoozed.length > 0) return { lead: nonSnoozed[0], isAlarm: false };
+
+    // Fallback: snoozed leads in snoozed order
+    const sortedSnoozed = [...dueLeads].sort(
+      (a, b) => currentSnoozed.indexOf(a._uniqueKey) - currentSnoozed.indexOf(b._uniqueKey)
+    );
+    return { lead: sortedSnoozed[0], isAlarm: false };
   };
 
   // Live duplicate detector as user types in "Naya Customer" modal
@@ -555,7 +622,6 @@ export default function KhushaliCallerCRM() {
         )
       );
 
-      // Wait briefly for Apps Script sheet row cleanup, then re-fetch clean data
       setTimeout(async () => {
         await fetchCallerSheet();
         setMerging(false);
@@ -705,9 +771,12 @@ export default function KhushaliCallerCRM() {
         const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
         const day1Date = l["Day_1_Date"] ? String(l["Day_1_Date"]).split("T")[0] : "";
         const tsDate = l["Timestamp"] ? String(l["Timestamp"]).split("T")[0] : "";
+        const callDates = getLeadCallDates(l);
 
+        // Today's Calls & Orders
         if (lastCall === todayDate) {
-          callsCount += 1;
+          const callsInToday = callDates.filter((d) => d === todayDate).length;
+          callsCount += Math.max(1, callsInToday);
           if (status === "Order Confirmed") {
             ordersCount += 1;
             revenue += parseFloat(l["Order_Amount"] || l["Amount"] || 0);
@@ -717,7 +786,7 @@ export default function KhushaliCallerCRM() {
         if (!isClosed && nextDate && nextDate < todayDate) overdueCount += 1;
         if (!isClosed && getLeadPriority(l) === "HOT") hotCount += 1;
 
-        const callDates = getLeadCallDates(l);
+        // Monthly Stats
         const callsInMonth = callDates.filter((d) => d.startsWith(selectedMonth)).length;
         if (callsInMonth > 0) {
           monthlyCalls += callsInMonth;
@@ -839,41 +908,46 @@ export default function KhushaliCallerCRM() {
     return { today, calledToday, ordersToday, officeVisit, hotLeads, overdue, upcoming, all: baseList.length };
   }, [leads, todayDate, loggedInCaller, adminCallerFilter]);
 
-  // TIME-BASED CALL POPUP ALARM + CHECKER
+  // 🔔 TIME-BASED CALL POPUP ALARM + NEXT DUE CALL CHECKER
   useEffect(() => {
     if (!loggedInCaller || leads.length === 0) return;
 
     const checkScheduledAndUrgentCalls = () => {
-      const now = new Date();
-      const currentTimeStr = now.toTimeString().slice(0, 5);
+      const { lead: nextLead, isAlarm } = findNextActionableLead(leads, snoozedKeys);
 
-      const exactTimeLead = leads.find((l) => {
-        const status = l["Call_Status"] || "New";
-        if (status === "Order Confirmed" || status === "Not Interested") return false;
-        const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
-        const nextTime = l["Next_Call_Time"] || "";
-        return nextDate === todayDate && nextTime && nextTime <= currentTimeStr;
-      });
-
-      if (exactTimeLead) {
-        if (!smartPopupLead || smartPopupLead._uniqueKey !== exactTimeLead._uniqueKey) {
-          playNotificationChime();
-        }
-        setSmartPopupLead(exactTimeLead);
-        setShowSmartPopup(true);
-        setIsPopupMinimized(false);
+      if (!nextLead) {
+        setSmartPopupLead(null);
+        setShowSmartPopup(false);
         return;
       }
 
-      const pendingList = leads.filter((l) => {
-        const status = l["Call_Status"] || "New";
-        if (status === "Order Confirmed" || status === "Not Interested") return false;
-        const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
-        return !nextDate || nextDate <= todayDate;
+      // Exact scheduled time alarm always overrides dismiss & minimized state
+      if (isAlarm) {
+        if (!smartPopupLead || smartPopupLead._uniqueKey !== nextLead._uniqueKey || !showSmartPopup) {
+          playNotificationChime();
+          setSmartPopupLead(nextLead);
+          setShowSmartPopup(true);
+          setIsPopupMinimized(false);
+          setPopupDismissed(false);
+        }
+        return;
+      }
+
+      // Keep smartPopupLead up to date if current popup lead is no longer due
+      const currentStillDue = smartPopupLead && leads.some((l) => {
+        if (l._uniqueKey !== smartPopupLead._uniqueKey) return false;
+        const st = l["Call_Status"] || "New";
+        if (st === "Order Confirmed" || st === "Not Interested") return false;
+        const nd = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
+        return !nd || nd <= todayDate;
       });
 
-      if (pendingList.length > 0 && !showSmartPopup) {
-        setSmartPopupLead(pendingList[0]);
+      if (!currentStillDue) {
+        setSmartPopupLead(nextLead);
+        if (!popupDismissed) {
+          setShowSmartPopup(true);
+        }
+      } else if (!showSmartPopup && !popupDismissed) {
         setShowSmartPopup(true);
       }
     };
@@ -881,14 +955,25 @@ export default function KhushaliCallerCRM() {
     checkScheduledAndUrgentCalls();
     const timer = setInterval(checkScheduledAndUrgentCalls, 15000);
     return () => clearInterval(timer);
-  }, [leads, loggedInCaller, todayDate, showSmartPopup, smartPopupLead]);
+  }, [leads, loggedInCaller, todayDate, showSmartPopup, smartPopupLead, popupDismissed, snoozedKeys]);
 
+  // SNOOZE ACTION: MOVE TO LAST IN QUEUE & MINIMIZE POPUP
   const handleSnooze = () => {
     if (!smartPopupLead) return;
-    setLeads((prev) => {
-      const withoutCurrent = prev.filter((l) => l._uniqueKey !== smartPopupLead._uniqueKey);
-      return [...withoutCurrent, smartPopupLead];
-    });
+    const snoozedKey = smartPopupLead._uniqueKey;
+    const updatedSnoozed = [...snoozedKeys.filter((k) => k !== snoozedKey), snoozedKey];
+    setSnoozedKeys(updatedSnoozed);
+
+    const updatedList = [
+      ...leads.filter((l) => l._uniqueKey !== snoozedKey),
+      smartPopupLead
+    ];
+    setLeads(updatedList);
+
+    const { lead: nextAfterSnooze } = findNextActionableLead(updatedList, updatedSnoozed, snoozedKey);
+    if (nextAfterSnooze) {
+      setSmartPopupLead(nextAfterSnooze);
+    }
     setIsPopupMinimized(true);
   };
 
@@ -944,6 +1029,24 @@ export default function KhushaliCallerCRM() {
 
   const handleSaveFollowUp = async () => {
     if (!activeLeadModal || !loggedInCaller) return;
+
+    // Input Validations
+    if (callStatusInput === "Order Confirmed") {
+      const parsedAmt = parseFloat(orderAmountInput);
+      if (!orderAmountInput || isNaN(parsedAmt) || parsedAmt <= 0) {
+        alert("Kripya valid Order Amount (₹) dalein!");
+        return;
+      }
+    }
+    if (callStatusInput === "Planning to Visit Office" && !visitDateInput) {
+      alert("Kripya Office Visit Date select karein!");
+      return;
+    }
+    if (customDateTimeEnabled && !customDateInput) {
+      alert("Kripya Custom Next Call Date select karein!");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -1033,29 +1136,34 @@ export default function KhushaliCallerCRM() {
 
       setLeads(updatedLeads);
       setActiveLeadModal(null);
-      setShowSmartPopup(false);
-      setIsPopupMinimized(false);
       setCallNoteInput("");
       setOrderAmountInput("");
       setOrderDetailsInput("");
 
-      if (autoDialerActive) {
-        const nextDueLead = updatedLeads.find((l) => {
-          if (l._uniqueKey === currentUniqueKey) return false;
-          const st = l["Call_Status"] || "New";
-          if (st === "Order Confirmed" || st === "Not Interested") return false;
-          const nd = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
-          const lc = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
-          return (!nd || nd <= todayDate) && lc !== todayDate;
-        });
+      // Find next due lead immediately after updating current lead
+      const { lead: nextDueLead } = findNextActionableLead(updatedLeads, snoozedKeys, currentUniqueKey);
 
+      if (autoDialerActive) {
         if (nextDueLead) {
           setTimeout(() => {
             handleOpenUpdateModal(nextDueLead);
-          }, 350);
+          }, 300);
         } else {
           setAutoDialerActive(false);
+          setSmartPopupLead(null);
+          setShowSmartPopup(false);
           alert("🎉 Aaj ke sabhi due calls complete ho gaye! Auto-Dialer finished.");
+        }
+      } else {
+        // Automatically bring up Next Call Popup for the next due customer
+        if (nextDueLead) {
+          setSmartPopupLead(nextDueLead);
+          setShowSmartPopup(true);
+          setIsPopupMinimized(false);
+          setPopupDismissed(false);
+        } else {
+          setSmartPopupLead(null);
+          setShowSmartPopup(false);
         }
       }
     } catch (e) {
@@ -1074,7 +1182,6 @@ export default function KhushaliCallerCRM() {
     const cleanNumber = String(newLeadForm.number || "").trim();
     const normNewPhone = normalizePhone10(cleanNumber);
 
-    // Block if duplicate exists in CRM
     const existingLead = leads.find((l) => {
       const existingNorm = normalizePhone10(l["Number"] || l["Contact Number"]);
       return normNewPhone.length >= 8 && existingNorm === normNewPhone;
@@ -1162,11 +1269,24 @@ export default function KhushaliCallerCRM() {
     e.preventDefault();
     if (!loggedInCaller) return;
 
+    const cleanName = String(editLeadForm.name || "").trim();
+    const cleanNumber = String(editLeadForm.number || "").trim();
+    const normEditedPhone = normalizePhone10(cleanNumber);
+
+    // Check if edited phone collides with another existing lead
+    const duplicateOther = leads.find((l) => {
+      if (l._uniqueKey === editLeadForm._uniqueKey) return false;
+      return normEditedPhone.length >= 8 && normalizePhone10(l["Number"] || l["Contact Number"]) === normEditedPhone;
+    });
+
+    if (duplicateOther) {
+      alert(`⚠️ Ye mobile number pehle se "${duplicateOther["Name"] || "Another Customer"}" ke naam par saved hai! Merge Duplicates button use karein.`);
+      return;
+    }
+
     try {
       setSaving(true);
 
-      const cleanName = String(editLeadForm.name || "").trim();
-      const cleanNumber = String(editLeadForm.number || "").trim();
       const cleanCity = String(editLeadForm.city || "").trim();
       const cleanBudget = String(editLeadForm.budget || "").trim();
       const cleanChemicals = String(editLeadForm.chemicals || "").trim();
@@ -1405,7 +1525,7 @@ export default function KhushaliCallerCRM() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* 💬 WHATSAPP QUOTATION MAKER BUTTON (ADDED FROM App.jsx) */}
+          {/* 💬 WHATSAPP QUOTATION MAKER BUTTON */}
           <button
             onClick={() => openQuotationModal(null)}
             className="flex items-center gap-1.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black px-3.5 py-2 rounded-xl text-xs transition shadow-md shadow-emerald-500/20"
@@ -1427,6 +1547,19 @@ export default function KhushaliCallerCRM() {
             <Zap className="w-3.5 h-3.5" />
             {autoDialerActive ? "Stop Auto-Dialer" : "Start Power Dialer"}
           </button>
+
+          {smartPopupLead && !showSmartPopup && (
+            <button
+              onClick={() => {
+                setShowSmartPopup(true);
+                setIsPopupMinimized(false);
+                setPopupDismissed(false);
+              }}
+              className="flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/40 text-amber-300 px-3 py-2 rounded-xl text-xs font-bold animate-pulse"
+            >
+              <BellRing className="w-3.5 h-3.5" /> Next Call Popup
+            </button>
+          )}
 
           <button
             onClick={() => setKnowledgeModalTab("catalog")}
@@ -2011,7 +2144,7 @@ export default function KhushaliCallerCRM() {
 
       {/* 💬 WHATSAPP QUOTATION MAKER MODAL (CHEMICALS + BOTTLES + CHANGE PRICE ON SELECTION) */}
       {quoteModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-6 relative shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
             <button onClick={() => setQuoteModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
@@ -2167,7 +2300,7 @@ export default function KhushaliCallerCRM() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <a
-                href={`https://wa.me/${quoteCustomerPhone.length === 10 ? "91" + quoteCustomerPhone : quoteCustomerPhone}?text=${encodeURIComponent(generateQuotationWhatsAppMessage())}`}
+                href={buildWhatsAppUrl(quoteCustomerPhone, generateQuotationWhatsAppMessage())}
                 target="_blank"
                 rel="noreferrer"
                 className="py-3 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 text-xs"
@@ -2189,7 +2322,7 @@ export default function KhushaliCallerCRM() {
 
       {/* 📲 1-CLICK WHATSAPP MULTI-TEMPLATE DRAWER MODAL */}
       {waTemplateModalLead && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4">
             <button onClick={() => setWaTemplateModalLead(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
@@ -2236,7 +2369,7 @@ export default function KhushaliCallerCRM() {
                   badge: "Quick Reminder"
                 }
               ].map((tpl) => {
-                const phone = String(waTemplateModalLead["Number"] || waTemplateModalLead["Contact Number"] || "").replace(/[^0-9]/g, "");
+                const rawPhone = waTemplateModalLead["Number"] || waTemplateModalLead["Contact Number"] || "";
                 const msg = buildWhatsAppTemplate(tpl.id, waTemplateModalLead, loggedInCaller.name);
                 return (
                   <div key={tpl.id} className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex flex-col gap-2 hover:border-emerald-500/40 transition">
@@ -2258,7 +2391,7 @@ export default function KhushaliCallerCRM() {
                         {copiedId === tpl.id ? "Copied" : "Copy Text"}
                       </button>
                       <a
-                        href={`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`}
+                        href={buildWhatsAppUrl(rawPhone, msg)}
                         target="_blank"
                         rel="noreferrer"
                         onClick={() => setWaTemplateModalLead(null)}
@@ -2437,6 +2570,7 @@ export default function KhushaliCallerCRM() {
                 e.stopPropagation();
                 setShowSmartPopup(false);
                 setIsPopupMinimized(false);
+                setPopupDismissed(true);
               }}
               className="text-slate-400 hover:text-white p-1 rounded-lg"
               title="Close"
@@ -2446,7 +2580,7 @@ export default function KhushaliCallerCRM() {
           </div>
         ) : (
           <div className="fixed bottom-5 right-5 left-5 md:left-auto md:w-[440px] bg-slate-900 border-2 border-emerald-500 rounded-3xl p-5 shadow-2xl z-40 animate-fade-in">
-            <div className="flex justify-between items-center mb-3">
+            <div className="flex justify-between items-center mb-3 gap-1.5">
               <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase flex items-center gap-1 ${
                 smartPopupLead["Call_Status"] === "Planning to Visit Office"
                   ? "bg-indigo-500 text-white"
@@ -2454,27 +2588,45 @@ export default function KhushaliCallerCRM() {
               }`}>
                 <BellRing className="w-3 h-3" /> 
                 {smartPopupLead["Call_Status"] === "Planning to Visit Office"
-                  ? `🏢 Office Visit Follow-up${smartPopupLead["Next_Call_Time"] ? " @ " + smartPopupLead["Next_Call_Time"] : ""}`
+                  ? `🏢 Office Visit${smartPopupLead["Next_Call_Time"] ? " @ " + smartPopupLead["Next_Call_Time"] : ""}`
                   : smartPopupLead["Next_Call_Time"] ? `Alarm: ${smartPopupLead["Next_Call_Time"]}` : "Next Due Call"}
               </span>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <button 
                   onClick={() => setIsPopupMinimized(true)} 
-                  className="text-slate-300 hover:text-white text-xs bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
+                  className="text-slate-300 hover:text-white text-[11px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg flex items-center gap-1 transition"
                 >
                   <Minimize2 className="w-3 h-3" /> Minimize
                 </button>
                 <button 
                   onClick={handleSnooze} 
-                  className="text-amber-400 hover:text-amber-300 text-xs bg-amber-950/60 border border-amber-800/60 px-2.5 py-1 rounded-lg font-bold transition"
+                  className="text-amber-400 hover:text-amber-300 text-[11px] bg-amber-950/60 border border-amber-800/60 px-2 py-1 rounded-lg font-bold transition"
                 >
-                  Snooze (Last me bhejo)
+                  Snooze
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSmartPopup(false);
+                    setIsPopupMinimized(false);
+                    setPopupDismissed(true);
+                  }}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg"
+                  title="Close Popup"
+                >
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
             <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-3.5 mb-4 space-y-1.5">
-              <h3 className="text-lg font-extrabold text-white">{smartPopupLead["Name"] || "Customer"}</h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-lg font-extrabold text-white">{smartPopupLead["Name"] || "Customer"}</h3>
+                {loggedInCaller.role === "admin" && smartPopupLead._callerName && (
+                  <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-bold">
+                    {smartPopupLead._callerName}
+                  </span>
+                )}
+              </div>
               <p className="text-sm font-mono text-emerald-400">{smartPopupLead["Number"] || smartPopupLead["Contact Number"]}</p>
               <div className="text-xs text-slate-300">
                 <strong>Requirement:</strong> {smartPopupLead["आपको कौन कौनसे chemical चाहिए?"] || "—"}
@@ -2782,6 +2934,7 @@ export default function KhushaliCallerCRM() {
                   </div>
 
                   <button
+                    type="button"
                     disabled={saving}
                     onClick={handleSaveFollowUp}
                     className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
@@ -2984,7 +3137,6 @@ export default function KhushaliCallerCRM() {
                 </div>
               </div>
 
-              {/* LIVE DUPLICATE WARNING BANNER */}
               {liveDuplicateLead && (
                 <div className="p-3 bg-rose-950/60 border border-rose-500/50 rounded-2xl text-xs space-y-1 animate-fade-in">
                   <div className="font-black text-rose-400 flex items-center gap-1.5">
@@ -3067,7 +3219,7 @@ export default function KhushaliCallerCRM() {
 
       {/* ✏️ IN-APP DIRECT EDIT CUSTOMER INFO MODAL */}
       {editCustomerModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl space-y-4">
             <button onClick={() => setEditCustomerModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
