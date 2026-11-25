@@ -1016,24 +1016,32 @@ export default function KhushaliCallerCRM() {
   };
 
 
-  const handleOpenUpdateModal = (lead) => {
+   const handleOpenUpdateModal = (lead) => {
     setActiveLeadModal(lead);
     setCallStatusInput(lead["Call_Status"] === "Planning to Visit Office" ? "Planning to Visit Office" : "Interested");
     setLeadPriorityInput(getLeadPriority(lead));
     setOrderAmountInput("");
     setOrderDetailsInput("");
-    setVisitDateInput(todayDate);
-    setVisitTimeInput("11:00");
+    
+    const existingNextDate = lead["Next_Call_Date"] && lead["Next_Call_Date"] !== "CLOSED" 
+      ? String(lead["Next_Call_Date"]).split("T")[0] 
+      : todayDate;
+    const existingNextTime = lead["Next_Call_Time"] ? String(lead["Next_Call_Time"]).trim() : "";
+
+    setVisitDateInput(existingNextDate);
+    setVisitTimeInput(existingNextTime || "11:00");
     setCallNoteInput("");
+    
+    // Reset custom date/time inputs cleanly every time modal opens
     setCustomDateTimeEnabled(false);
-    setCustomDateInput("");
-    setCustomTimeInput("");
+    setCustomDateInput(existingNextDate);
+    setCustomTimeInput(existingNextTime);
 
     const existingRemarks = getLeadRemarksList(lead);
     setModalHelperTab(existingRemarks.length > 0 ? "history" : "objections");
   };
 
-      const handleSaveFollowUp = async () => {
+        const handleSaveFollowUp = async () => {
     if (!activeLeadModal || !loggedInCaller) return;
 
     if (callStatusInput === "Order Confirmed") {
@@ -1063,15 +1071,18 @@ export default function KhushaliCallerCRM() {
       let nextDateVal = stepInfo.nextDate;
       let nextTimeVal = "";
 
-      if (callStatusInput === "Planning to Visit Office") {
+      // 1. Highest Priority: Custom Date & Time Checkbox
+      if (customDateTimeEnabled && customDateInput) {
+        nextDateVal = customDateInput;
+        nextTimeVal = customTimeInput ? String(customTimeInput).trim() : "";
+        if (callStatusInput === "Same Day Follow-up" || stepInfo.isSameDayRepeat) {
+          nextStageVal = currentStage;
+        }
+      } else if (callStatusInput === "Planning to Visit Office") {
         nextStageVal = currentStage;
         nextDateVal = visitDateInput || todayDate;
-        nextTimeVal = visitTimeInput || "";
-      } else if (customDateTimeEnabled && customDateInput) {
-        nextDateVal = customDateInput;
-        nextTimeVal = customTimeInput || "";
+        nextTimeVal = visitTimeInput ? String(visitTimeInput).trim() : "";
       } else if (callStatusInput === "Busy / Call Tomorrow" || callStatusInput === "Ringing / Not Picked") {
-        // 🔥 PRIORITY FIX: Busy / Not Picked hamesha kal (Tomorrow) par jayega, chahe aaj pehle baat hui ho
         nextStageVal = currentStage;
         const tmw = new Date(todayDate + "T00:00:00");
         tmw.setDate(tmw.getDate() + 1);
@@ -1097,8 +1108,8 @@ export default function KhushaliCallerCRM() {
         finalRemark = `${noteTimestamp} [ORDER: ₹${finalAmt}] ${orderDetailsInput} | Note: ${callNoteInput}`;
       } else if (callStatusInput === "Planning to Visit Office") {
         finalRemark = `${noteTimestamp} [🏢 OFFICE VISIT: ${nextDateVal}${nextTimeVal ? " @ " + nextTimeVal : ""}] ${callNoteInput}`;
-      } else if (customTimeInput) {
-        finalRemark = `${noteTimestamp} [Scheduled: ${nextDateVal} @ ${nextTimeVal}] ${callNoteInput}`;
+      } else if (customDateTimeEnabled && customDateInput) {
+        finalRemark = `${noteTimestamp} [Scheduled: ${nextDateVal}${nextTimeVal ? " @ " + nextTimeVal : ""}] ${callNoteInput}`;
       } else {
         finalRemark = `${noteTimestamp} ${callNoteInput}`;
       }
@@ -1146,6 +1157,9 @@ export default function KhushaliCallerCRM() {
 
       setLeads(updatedLeads);
       setActiveLeadModal(null);
+      setCustomDateTimeEnabled(false);
+      setCustomDateInput("");
+      setCustomTimeInput("");
       setCallNoteInput("");
       setOrderAmountInput("");
       setOrderDetailsInput("");
@@ -1180,8 +1194,6 @@ export default function KhushaliCallerCRM() {
       setSaving(false);
     }
   };
-
-
 
   // 🚫 IN-APP NEW CUSTOMER SUBMIT WITH DUPLICATE BLOCK
   const handleAddNewCustomer = async (e) => {
