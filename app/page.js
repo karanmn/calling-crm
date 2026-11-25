@@ -1033,7 +1033,7 @@ export default function KhushaliCallerCRM() {
     setModalHelperTab(existingRemarks.length > 0 ? "history" : "objections");
   };
 
-    const handleSaveFollowUp = async () => {
+      const handleSaveFollowUp = async () => {
     if (!activeLeadModal || !loggedInCaller) return;
 
     if (callStatusInput === "Order Confirmed") {
@@ -1070,9 +1070,8 @@ export default function KhushaliCallerCRM() {
       } else if (customDateTimeEnabled && customDateInput) {
         nextDateVal = customDateInput;
         nextTimeVal = customTimeInput || "";
-      } else if (callStatusInput === "Same Day Follow-up" || stepInfo.isSameDayRepeat) {
-        nextStageVal = currentStage;
       } else if (callStatusInput === "Busy / Call Tomorrow" || callStatusInput === "Ringing / Not Picked") {
+        // 🔥 PRIORITY FIX: Busy / Not Picked hamesha kal (Tomorrow) par jayega, chahe aaj pehle baat hui ho
         nextStageVal = currentStage;
         const tmw = new Date(todayDate + "T00:00:00");
         tmw.setDate(tmw.getDate() + 1);
@@ -1080,6 +1079,8 @@ export default function KhushaliCallerCRM() {
       } else if (callStatusInput === "Order Confirmed" || callStatusInput === "Not Interested") {
         nextStageVal = "CLOSED";
         nextDateVal = "CLOSED";
+      } else if (callStatusInput === "Same Day Follow-up" || stepInfo.isSameDayRepeat) {
+        nextStageVal = currentStage;
       }
 
       if (nextDateVal !== "CLOSED" && nextDateVal < todayDate) {
@@ -1179,6 +1180,7 @@ export default function KhushaliCallerCRM() {
       setSaving(false);
     }
   };
+
 
 
   // 🚫 IN-APP NEW CUSTOMER SUBMIT WITH DUPLICATE BLOCK
