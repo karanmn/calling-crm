@@ -832,12 +832,48 @@ export default function KhushaliCallerCRM() {
       await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
       let qrDataUrl = "";
       try {
-        await loadScript("https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js");
-        if (window.QRCode && window.QRCode.toDataURL) {
-          qrDataUrl = await window.QRCode.toDataURL(upiUrl, { width: 240, margin: 1 });
+        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js");
+        if (window.QRCode) {
+          const tmpDiv = document.createElement("div");
+          tmpDiv.style.position = "fixed";
+          tmpDiv.style.left = "-9999px";
+          document.body.appendChild(tmpDiv);
+          new window.QRCode(tmpDiv, {
+            text: upiUrl,
+            width: 240,
+            height: 240,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: window.QRCode.CorrectLevel ? window.QRCode.CorrectLevel.M : 0
+          });
+          const qrCanvas = tmpDiv.querySelector("canvas");
+          if (qrCanvas) {
+            qrDataUrl = qrCanvas.toDataURL("image/png");
+          } else {
+            const qrImg = tmpDiv.querySelector("img");
+            if (qrImg && qrImg.src) qrDataUrl = qrImg.src;
+          }
+          document.body.removeChild(tmpDiv);
         }
       } catch (qrErr) {
-        console.warn("QR generation skipped:", qrErr);
+        console.warn("cdnjs QRCode skipped:", qrErr);
+      }
+
+      // Fallback via CORS-enabled QR API if canvas QR didn't populate
+      if (!qrDataUrl) {
+        try {
+          const qrRes = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=4&data=${encodeURIComponent(upiUrl)}`);
+          if (qrRes.ok) {
+            const blob = await qrRes.blob();
+            qrDataUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result || "");
+              reader.readAsDataURL(blob);
+            });
+          }
+        } catch (fallbackErr) {
+          console.warn("QR API fallback skipped:", fallbackErr);
+        }
       }
 
       const { jsPDF } = window.jspdf;
