@@ -8,7 +8,7 @@ import {
   Contact, Building2, Zap, BookOpen, ShieldAlert, 
   Users, Copy, Check, Sparkles, FlaskConical, BarChart3, 
   ChevronDown, ChevronUp, GitMerge, AlertTriangle,
-  Package, Trash2, Send
+  Package, Trash2, Send, Download
 } from "lucide-react";
 
 const FOLLOWUP_FLOW = [
@@ -395,6 +395,7 @@ export default function KhushaliCallerCRM() {
   const [quoteCustomerName, setQuoteCustomerName] = useState("Wholesale Buyer");
   const [quoteCustomerPhone, setQuoteCustomerPhone] = useState("");
   const [quoteCustomerCity, setQuoteCustomerCity] = useState("Jaipur, Rajasthan");
+  const [quoteTaxMode, setQuoteTaxMode] = useState("AUTO");
   const [quoteItems, setQuoteItems] = useState([
     { id: 1, itemType: "CHEMICAL", productName: PRODUCT_CATALOG[3].name, flavour: PRODUCT_CATALOG[3].flavours[0], tier: "tier25", qty: 25, unit: "kg", customPrice: 120 },
     { id: 2, itemType: "CHEMICAL", productName: PRODUCT_CATALOG[0].name, flavour: PRODUCT_CATALOG[0].flavours[0], tier: "tier25", qty: 25, unit: "kg", customPrice: 250 }
@@ -680,6 +681,7 @@ export default function KhushaliCallerCRM() {
       setQuoteCustomerPhone("");
       setQuoteCustomerCity("Jaipur, Rajasthan");
     }
+    setQuoteTaxMode("AUTO");
     setQuoteModalOpen(true);
   };
 
@@ -770,6 +772,259 @@ export default function KhushaliCallerCRM() {
     lines.push("\nTo confirm this order, kindly reply to this message or call 8905878950.");
 
     return lines.join("\n");
+  };
+
+  // Convert number to Indian Rupees words (for Quotation PDF)
+  const numberToIndianWords = (num) => {
+    const n = Math.round(Number(num) || 0);
+    if (n === 0) return "Zero Rupees only";
+    const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+      "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seven" + "ty", "Eighty", "Ninety"];
+    const twoDigits = (x) => (x < 20 ? ones[x] : tens[Math.floor(x / 10)] + (x % 10 ? " " + ones[x % 10] : ""));
+    const threeDigits = (x) => {
+      if (x === 0) return "";
+      const h = Math.floor(x / 100);
+      const r = x % 100;
+      return (h ? ones[h] + " Hundred" + (r ? " " : "") : "") + (r ? twoDigits(r) : "");
+    };
+    let res = "";
+    const crore = Math.floor(n / 10000000);
+    const lakh = Math.floor((n % 10000000) / 100000);
+    const thousand = Math.floor((n % 100000) / 1000);
+    const rest = n % 1000;
+    if (crore) res += twoDigits(crore) + " Crore ";
+    if (lakh) res += twoDigits(lakh) + " Lakh ";
+    if (thousand) res += twoDigits(thousand) + " Thousand ";
+    if (rest) res += threeDigits(rest);
+    return res.trim() + " Rupees only";
+  };
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadQuotationPDF = async () => {
+    setDownloadingPdf(true);
+    const quoteNo = "QT-" + Date.now().toString().slice(-4);
+    const nowObj = new Date();
+    const dateStr = `${String(nowObj.getDate()).padStart(2, "0")}-${String(nowObj.getMonth() + 1).padStart(2, "0")}-${nowObj.getFullYear()}`;
+    const totalQty = quoteSummary.rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+    const autoIsRajasthan = /rajasthan|jaipur|chaksu|sikar|kota|jodhpur|udaipur|ajmer|alwar|bikaner|bhilwara|bharatpur|nagaur|jhunjhunu|tonk|pali|churu|barmer|jaisalmer|hanumangarh|ganganagar|bundi|baran|jhalawar|dausa|karauli|sawai|dholpur|chittorgarh|banswara|dungarpur|pratapgarh|sirohi|jalore|rajsamand|beawar|kishangarh|bhiwadi|neem ka thana|didwana|ratangarh|niwai|\brj\b|\b08\b/i.test(quoteCustomerCity || "");
+    const isRajasthan = quoteTaxMode === "AUTO" ? autoIsRajasthan : quoteTaxMode === "INTRA_RJ";
+
+    const rowsHtml = quoteSummary.rows.map((r, idx) => {
+      const flavLabel = r.flavour && !r.flavour.startsWith("Standard") ? ` (${r.flavour})` : "";
+      const baseUnitPrice = (r.price / 1.18).toFixed(2);
+      const rowTaxable = r.lineTotal / 1.18;
+      const rowGst = (r.lineTotal - rowTaxable).toFixed(2);
+      return `
+        <tr>
+          <td style="border:1px solid #334155;padding:6px;text-align:center;">${idx + 1}</td>
+          <td style="border:1px solid #334155;padding:6px;font-weight:600;">${r.productName}${flavLabel}</td>
+          <td style="border:1px solid #334155;padding:6px;text-align:right;">${r.qty}</td>
+          <td style="border:1px solid #334155;padding:6px;text-align:center;">${r.unit === "kg" ? "Kg" : "Pcs"}</td>
+          <td style="border:1px solid #334155;padding:6px;text-align:right;">₹ ${Number(baseUnitPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+          <td style="border:1px solid #334155;padding:6px;text-align:right;">₹ ${Number(rowGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })} (18.0%)</td>
+          <td style="border:1px solid #334155;padding:6px;text-align:right;font-weight:700;">₹ ${r.lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const halfGst = (quoteSummary.gstIncluded / 2).toFixed(2);
+    const taxRowsHtml = isRajasthan
+      ? `<tr>
+          <td style="border:1px solid #334155;padding:5px;text-align:right;">₹ ${quoteSummary.taxableBase.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:center;">—</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:right;">—</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:center;">9.0%</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:right;">₹ ${Number(halfGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:center;">9.0%</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:right;">₹ ${Number(halfGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:right;font-weight:700;">₹ ${quoteSummary.gstIncluded.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+        </tr>`
+      : `<tr>
+          <td style="border:1px solid #334155;padding:5px;text-align:right;">₹ ${quoteSummary.taxableBase.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:center;">18.0%</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:right;">₹ ${quoteSummary.gstIncluded.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:center;">—</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:right;">—</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:center;">—</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:right;">—</td>
+          <td style="border:1px solid #334155;padding:5px;text-align:right;font-weight:700;">₹ ${quoteSummary.gstIncluded.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+        </tr>`;
+
+    const pdfHtml = `
+      <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;background:#ffffff;padding:18px;font-size:11px;line-height:1.4;width:750px;box-sizing:border-box;">
+        <div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:8px;">Quotation / Estimate</div>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #334155;">
+          <tr>
+            <td colspan="4" style="border:1px solid #334155;padding:10px;width:58%;vertical-align:top;">
+              <div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:3px;">KHUSHALI CHEMICAL</div>
+              <div>Phone no.: 9216273399 / 8905878950</div>
+              <div>Email: Rohitsambhawani@gmail.com</div>
+              <div>GSTIN: 08PBDPS5444B1ZD</div>
+              <div>State: 08-Rajasthan</div>
+            </td>
+            <td colspan="2" style="border:1px solid #334155;padding:8px;width:21%;vertical-align:top;">
+              <div style="color:#475569;font-size:10px;">Quotation No.</div>
+              <div style="font-weight:700;font-size:12px;margin-top:2px;">${quoteNo}</div>
+            </td>
+            <td style="border:1px solid #334155;padding:8px;width:21%;vertical-align:top;">
+              <div style="color:#475569;font-size:10px;">Date</div>
+              <div style="font-weight:700;font-size:12px;margin-top:2px;">${dateStr}</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="7" style="border:1px solid #334155;padding:8px;">
+              <div style="color:#475569;font-size:10px;">Quote To</div>
+              <div style="font-weight:700;font-size:12px;margin-top:2px;">${quoteCustomerName || "Valued Buyer"}</div>
+              <div>City / State: ${quoteCustomerCity || "India"}</div>
+              ${quoteCustomerPhone ? `<div>Contact No.: ${quoteCustomerPhone}</div>` : ""}
+            </td>
+          </tr>
+        </table>
+
+        <table style="width:100%;border-collapse:collapse;margin-top:-1px;">
+          <thead>
+            <tr style="background:#f8fafc;">
+              <th style="border:1px solid #334155;padding:6px;width:5%;text-align:center;">#</th>
+              <th style="border:1px solid #334155;padding:6px;width:36%;text-align:left;">Item Name</th>
+              <th style="border:1px solid #334155;padding:6px;width:9%;text-align:right;">Quantity</th>
+              <th style="border:1px solid #334155;padding:6px;width:7%;text-align:center;">Unit</th>
+              <th style="border:1px solid #334155;padding:6px;width:13%;text-align:right;">Price/ Unit</th>
+              <th style="border:1px solid #334155;padding:6px;width:15%;text-align:right;">GST</th>
+              <th style="border:1px solid #334155;padding:6px;width:15%;text-align:right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+            <tr style="background:#f8fafc;font-weight:700;">
+              <td colspan="2" style="border:1px solid #334155;padding:6px;">Total</td>
+              <td style="border:1px solid #334155;padding:6px;text-align:right;">${totalQty}</td>
+              <td style="border:1px solid #334155;padding:6px;"></td>
+              <td style="border:1px solid #334155;padding:6px;"></td>
+              <td style="border:1px solid #334155;padding:6px;text-align:right;">₹ ${quoteSummary.gstIncluded.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+              <td style="border:1px solid #334155;padding:6px;text-align:right;">₹ ${quoteSummary.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table style="width:100%;border-collapse:collapse;margin-top:-1px;">
+          <tr>
+            <td style="border:1px solid #334155;padding:8px;width:50%;vertical-align:top;">
+              <div style="font-weight:700;font-size:10px;color:#475569;">Estimate Amount In Words</div>
+              <div style="font-weight:700;margin-top:3px;">${numberToIndianWords(quoteSummary.totalAmount)}</div>
+            </td>
+            <td style="border:1px solid #334155;padding:8px;width:50%;vertical-align:top;">
+              <div style="font-weight:700;font-size:10px;color:#475569;margin-bottom:4px;">Amounts</div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                <span>Taxable Sub Total</span>
+                <span>₹ ${quoteSummary.taxableBase.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+              </div>
+              ${isRajasthan ? `
+                <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                  <span>CGST (9%)</span>
+                  <span>₹ ${Number(halfGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                  <span>SGST (9%)</span>
+                  <span>₹ ${Number(halfGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                </div>
+              ` : `
+                <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                  <span>IGST (18%)</span>
+                  <span>₹ ${quoteSummary.gstIncluded.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                </div>
+              `}
+              <div style="display:flex;justify-content:space-between;font-weight:800;font-size:12px;border-top:1px solid #cbd5e1;padding-top:4px;margin-top:4px;">
+                <span>Total</span>
+                <span>₹ ${quoteSummary.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <table style="width:100%;border-collapse:collapse;margin-top:-1px;font-size:10px;">
+          <thead>
+            <tr style="background:#f8fafc;">
+              <th rowspan="2" style="border:1px solid #334155;padding:5px;text-align:right;">Taxable Amount</th>
+              <th colspan="2" style="border:1px solid #334155;padding:4px;text-align:center;">IGST</th>
+              <th colspan="2" style="border:1px solid #334155;padding:4px;text-align:center;">CGST</th>
+              <th colspan="2" style="border:1px solid #334155;padding:4px;text-align:center;">SGST</th>
+              <th rowspan="2" style="border:1px solid #334155;padding:5px;text-align:right;">Total Tax Amount</th>
+            </tr>
+            <tr style="background:#f8fafc;">
+              <th style="border:1px solid #334155;padding:4px;text-align:center;">Rate</th>
+              <th style="border:1px solid #334155;padding:4px;text-align:right;">Amount</th>
+              <th style="border:1px solid #334155;padding:4px;text-align:center;">Rate</th>
+              <th style="border:1px solid #334155;padding:4px;text-align:right;">Amount</th>
+              <th style="border:1px solid #334155;padding:4px;text-align:center;">Rate</th>
+              <th style="border:1px solid #334155;padding:4px;text-align:right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${taxRowsHtml}
+          </tbody>
+        </table>
+
+        <table style="width:100%;border-collapse:collapse;margin-top:-1px;">
+          <tr>
+            <td style="border:1px solid #334155;padding:8px;width:36%;vertical-align:top;">
+              <div style="font-weight:700;margin-bottom:4px;">Bank Details</div>
+              <div>Name: M/S KHUSHALI CHEMICAL</div>
+              <div>Bank Name: IDFC FIRST</div>
+              <div>Branch: JAIPUR - JOHARI BAZAR BRANCH</div>
+              <div>Account No.: 79610970195</div>
+              <div>IFSC: IDFB0043415</div>
+              <div>SWIFT Code: IDFBINBBMUM</div>
+            </td>
+            <td style="border:1px solid #334155;padding:8px;width:34%;vertical-align:top;">
+              <div style="font-weight:700;margin-bottom:4px;">Terms and conditions</div>
+              <div>Thank you for doing business with us.</div>
+              <div style="margin-top:4px;color:#475569;font-size:10px;">All rates are inclusive of 18% GST.</div>
+            </td>
+            <td style="border:1px solid #334155;padding:8px;width:30%;vertical-align:bottom;text-align:center;">
+              <div style="font-weight:700;margin-bottom:28px;">For: KHUSHALI CHEMICAL</div>
+              <div style="font-weight:700;border-top:1px solid #94a3b8;padding-top:4px;">Authorized Signatory</div>
+            </td>
+          </tr>
+        </table>
+      </div>
+    `;
+
+    try {
+      if (!window.html2pdf) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = pdfHtml;
+      const safeName = (quoteCustomerName || "Buyer").replace(/[^a-zA-Z0-9_-]/g, "_");
+      await window.html2pdf()
+        .set({
+          margin: 6,
+          filename: `Quotation_${safeName}_${dateStr}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+        })
+        .from(wrapper.firstElementChild)
+        .save();
+    } catch (err) {
+      const printWin = window.open("", "_blank");
+      if (printWin) {
+        printWin.document.write(`<html><head><title>Quotation - ${quoteCustomerName}</title></head><body style="margin:0;padding:12px;">${pdfHtml}<script>window.onload=function(){window.print();}</script></body></html>`);
+        printWin.document.close();
+      } else {
+        alert("Popup blocked! Kripya browser me popup allow karein.");
+      }
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   // Available Months Dropdown List
@@ -1407,6 +1662,34 @@ export default function KhushaliCallerCRM() {
             : item
         )
       );
+
+      setAllTeamLeads((prev) =>
+        prev.map((item) =>
+          item._uniqueKey === editLeadForm._uniqueKey
+            ? {
+                ...item,
+                Name: cleanName,
+                Number: cleanNumber,
+                "Contact Number": cleanNumber,
+                City: cleanCity,
+                "सर आपका बजट कितना है?": cleanBudget,
+                "आपको कौन कौनसे chemical चाहिए?": cleanChemicals,
+              }
+            : item
+        )
+      );
+
+      if (activeLeadModal && activeLeadModal._uniqueKey === editLeadForm._uniqueKey) {
+        setActiveLeadModal((prev) => ({
+          ...prev,
+          Name: cleanName,
+          Number: cleanNumber,
+          "Contact Number": cleanNumber,
+          City: cleanCity,
+          "सर आपका बजट कितना है?": cleanBudget,
+          "आपको कौन कौनसे chemical चाहिए?": cleanChemicals,
+        }));
+      }
 
       if (historyModalLead && historyModalLead._uniqueKey === editLeadForm._uniqueKey) {
         setHistoryModalLead((prev) => ({
@@ -2241,7 +2524,7 @@ export default function KhushaliCallerCRM() {
               <h3 className="text-xl font-black text-white mt-0.5">Create & Send Quotation</h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="text-xs font-semibold text-slate-400 block mb-1">Buyer / Business Name</label>
                 <input
@@ -2269,6 +2552,18 @@ export default function KhushaliCallerCRM() {
                   onChange={(e) => setQuoteCustomerCity(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                 />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">GST Type (PDF)</label>
+                <select
+                  value={quoteTaxMode}
+                  onChange={(e) => setQuoteTaxMode(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-amber-300 font-semibold focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="AUTO">Auto (By City/State)</option>
+                  <option value="INTRA_RJ">Rajasthan (CGST 9% + SGST 9%)</option>
+                  <option value="INTER_IGST">Out of Rajasthan (IGST 18%)</option>
+                </select>
               </div>
             </div>
 
@@ -2398,19 +2693,27 @@ export default function KhushaliCallerCRM() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
               <a
                 href={buildWhatsAppUrl(quoteCustomerPhone, generateQuotationWhatsAppMessage())}
                 target="_blank"
                 rel="noreferrer"
-                className="py-3 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 text-xs"
+                className="py-3 px-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 text-xs"
               >
                 <Send className="w-4 h-4" /> Send on WhatsApp
               </a>
               <button
                 type="button"
+                disabled={downloadingPdf}
+                onClick={handleDownloadQuotationPDF}
+                className="py-3 px-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl shadow-lg shadow-indigo-600/20 transition flex items-center justify-center gap-2 text-xs"
+              >
+                <Download className="w-4 h-4" /> {downloadingPdf ? "Generating PDF..." : "Download PDF"}
+              </button>
+              <button
+                type="button"
                 onClick={() => handleCopyText(generateQuotationWhatsAppMessage(), "quote_copy")}
-                className="py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 transition flex items-center justify-center gap-2 text-xs"
+                className="py-3 px-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 transition flex items-center justify-center gap-2 text-xs"
               >
                 {copiedId === "quote_copy" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                 {copiedId === "quote_copy" ? "Quotation Copied!" : "Copy Quotation Text"}
@@ -2864,6 +3167,14 @@ export default function KhushaliCallerCRM() {
                       >
                         <Phone className="w-3.5 h-3.5" /> Dial
                       </a>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditCustomer(activeLeadModal)}
+                        className="px-2.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-xs border border-amber-500/40 flex items-center gap-1"
+                        title="Edit Customer Details"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" /> Edit
+                      </button>
                       <button
                         type="button"
                         onClick={() => openQuotationModal(activeLeadModal)}
