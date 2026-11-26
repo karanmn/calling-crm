@@ -293,6 +293,21 @@ const normalizePhone10 = (raw) => {
   return digits.length >= 10 ? digits.slice(-10) : digits;
 };
 
+// Normalize Google Sheet dates (ISO, YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY) to YYYY-MM-DD
+const normalizeSheetDate = (raw) => {
+  if (!raw) return "";
+  const s = String(raw).trim();
+  if (!s || s === "CLOSED") return s;
+  const isoPart = s.split("T")[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoPart)) return isoPart;
+  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (dmy) {
+    const [, dd, mm, yyyy] = dmy;
+    return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+  }
+  return isoPart;
+};
+
 // Safe WhatsApp URL Builder (Prevents 9191 double country code)
 const buildWhatsAppUrl = (rawPhone, text = "") => {
   const digits = String(rawPhone || "").replace(/[^0-9]/g, "");
@@ -322,7 +337,11 @@ const buildWhatsAppTemplate = (type, lead, callerName) => {
   }
 
   if (type === "price_list") {
-    return `नमस्ते ${name} जी! 🙏\n*KHUSHALI CHEMICALS (Jaipur)*\n*(All Rates Per Kg - Including 18% GST)*\n\n🔹 *White Phenyl Conc (1:30):* ₹255 (5Kg) | ₹245 (50Kg)\n🔹 *Rose Phenyl Conc (1:30):* ₹265 (5Kg) | ₹255 (50Kg)\n🔹 *Black Phenyl Conc (1:9):* ₹175 (5Kg) | ₹165 (50Kg)\n🔹 *Toilet Cleaner Conc (1:7):* ₹125 (5Kg) | ₹115 (50Kg)\n🔹 *Bathroom Cleaner (1:8):* ₹145 (5Kg) | ₹135 (50Kg)\n🔹 *Handwash / Dishwash / Fabric / Car Wash (1:9):* ₹350 (5Kg) | ₹340 (50Kg)\n🔹 *Glass Cleaner Conc (1:100):* ₹160 (5Kg) | ₹150 (50Kg)\n🔹 *Floor Cleaner Conc (1:60):* ₹820 (5Kg) | ₹800 (50Kg)\n🔹 *Room Freshener (1:20):* ₹1220 (5Kg)\n\n📋 *GST:* 08PBDPS5444B1ZD\n🌐 *Web:* khushalichemicals.com\n\nबताइए सर, इसमें से कौन-कौन से आइटम का कोटेशन या सैंपल पैक फाइनल करें?`;
+    const catalogLines = PRODUCT_CATALOG.map(p => {
+      const ratioShort = (p.ratio || "").split(" ")[0];
+      return `🔹 *${p.name} (${ratioShort}):* ${p.slabs}`;
+    }).join("\n");
+    return `नमस्ते ${name} जी! 🙏\n*KHUSHALI CHEMICALS (Jaipur)*\n*(All Rates Per Kg - Including 18% GST)*\n\n${catalogLines}\n\n📋 *GST:* 08PBDPS5444B1ZD\n🌐 *Web:* khushalichemicals.com\n\nबताइए सर, इसमें से कौन-कौन से आइटम का कोटेशन या सैंपल पैक फाइनल करें?`;
   }
 
   if (type === "office_visit") {
@@ -345,6 +364,7 @@ export default function KhushaliCallerCRM() {
   const [loginError, setLoginError] = useState("");
 
   const [leads, setLeads] = useState([]);
+  const [allTeamLeads, setAllTeamLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const [merging, setMerging] = useState(false);
   const [activeFilter, setActiveFilter] = useState("today");
@@ -491,6 +511,14 @@ export default function KhushaliCallerCRM() {
     return Array.from(uniqueDates);
   };
 
+  // Extract locked Order Date from [ORDER: ₹...] note so later follow-ups don't shift revenue date
+  const getLeadOrderDate = (lead) => {
+    const allNotes = FOLLOWUP_FLOW.map((f) => String(lead[f.noteCol] || "")).join(" | ");
+    const m = allNotes.match(/\[(\d{4}-\d{2}-\d{2})(?:\s+\d{2}:\d{2})?\]\s*\[ORDER:/);
+    if (m && m[1]) return m[1];
+    return normalizeSheetDate(lead["Last_Call_Date"]) || normalizeSheetDate(lead["Day_1_Date"]) || normalizeSheetDate(lead["Timestamp"]);
+  };
+
   // Helper to select the next actionable due lead (respects scheduled times & snoozed queue)
   const findNextActionableLead = (leadList, currentSnoozed = [], excludeKey = null) => {
     const now = new Date();
@@ -502,9 +530,10 @@ export default function KhushaliCallerCRM() {
       return status !== "Order Confirmed" && status !== "Not Interested";
     });
 
-    // 1. Exact scheduled alarm due now (Next_Call_Date === today && Next_Call_Time <= now)
+    // 1. Exact scheduled alarm due now (respects snoozedKeys so Snooze actually works)
     const exactAlarm = openLeads.find((l) => {
-      const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
+      if (currentSnoozed.includes(l._uniqueKey)) return false;
+      const nextDate = normalizeSheetDate(l["Next_Call_Date"]);
       const nextTime = l["Next_Call_Time"] ? String(l["Next_Call_Time"]).trim() : "";
       return nextDate === todayDate && nextTime && nextTime <= currentTimeStr;
     });
@@ -512,7 +541,7 @@ export default function KhushaliCallerCRM() {
 
     // 2. Due leads (not scheduled for a future time later today)
     const dueLeads = openLeads.filter((l) => {
-      const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
+      const nextDate = normalizeSheetDate(l["Next_Call_Date"]);
       const nextTime = l["Next_Call_Time"] ? String(l["Next_Call_Time"]).trim() : "";
       if (!nextDate) return true;
       if (nextDate < todayDate) return true;
@@ -542,64 +571,54 @@ export default function KhushaliCallerCRM() {
     return { lead: sortedSnoozed[0], isAlarm: false };
   };
 
-  // Live duplicate detector as user types in "Naya Customer" modal
+  // Live cross-caller duplicate detector (checks BOTH Piyush & Garv lists)
   const liveDuplicateLead = useMemo(() => {
     const typedNorm = normalizePhone10(newLeadForm.number);
     if (typedNorm.length < 8) return null;
-    return leads.find((l) => {
+    const pool = allTeamLeads.length > 0 ? allTeamLeads : leads;
+    return pool.find((l) => {
       const existingNorm = normalizePhone10(l["Number"] || l["Contact Number"]);
       return existingNorm === typedNorm;
     }) || null;
-  }, [newLeadForm.number, leads]);
+  }, [newLeadForm.number, allTeamLeads, leads]);
 
-  // FETCH SINGLE CALLER OR BOTH CALLERS (FOR ADMIN)
+  // FETCH BOTH CALLERS FOR CROSS-CALLER DUPLICATE CHECK + SCOPE VIEW BY ROLE
   const fetchCallerSheet = async () => {
     if (!loggedInCaller) return;
     setLoading(true);
     try {
-      if (loggedInCaller.role === "admin") {
-        const urls = [
-          { id: "piyush", name: "Piyush", url: CALLER_PROFILES.piyush.sheetApiUrl },
-          { id: "garv", name: "Garv", url: CALLER_PROFILES.garv.sheetApiUrl }
-        ];
-        const combined = [];
-        await Promise.all(
-          urls.map(async (u) => {
-            if (!u.url) return;
-            try {
-              const res = await fetch(u.url);
-              const data = await res.json();
-              if (data.status === "success" && Array.isArray(data.leads)) {
-                data.leads.forEach((l) => {
-                  combined.push({
-                    ...l,
-                    _callerId: u.id,
-                    _callerName: u.name,
-                    _sheetUrl: u.url,
-                    _uniqueKey: `${u.id}_${l.rowIndex}`
-                  });
+      const urls = [
+        { id: "piyush", name: "Piyush", url: CALLER_PROFILES.piyush.sheetApiUrl },
+        { id: "garv", name: "Garv", url: CALLER_PROFILES.garv.sheetApiUrl }
+      ];
+      const combined = [];
+      await Promise.all(
+        urls.map(async (u) => {
+          if (!u.url) return;
+          try {
+            const res = await fetch(u.url);
+            const data = await res.json();
+            if (data.status === "success" && Array.isArray(data.leads)) {
+              data.leads.forEach((l) => {
+                combined.push({
+                  ...l,
+                  _callerId: u.id,
+                  _callerName: u.name,
+                  _sheetUrl: u.url,
+                  _uniqueKey: `${u.id}_${l.rowIndex}`
                 });
-              }
-            } catch (e) {
-              console.error(`Error fetching ${u.name}:`, e);
+              });
             }
-          })
-        );
+          } catch (e) {
+            console.error(`Error fetching ${u.name}:`, e);
+          }
+        })
+      );
+      setAllTeamLeads(combined);
+      if (loggedInCaller.role === "admin") {
         setLeads(combined);
       } else {
-        if (!loggedInCaller.sheetApiUrl) return;
-        const res = await fetch(loggedInCaller.sheetApiUrl);
-        const data = await res.json();
-        if (data.status === "success") {
-          const tagged = (data.leads || []).map((l) => ({
-            ...l,
-            _callerId: loggedInCaller.id,
-            _callerName: loggedInCaller.name,
-            _sheetUrl: loggedInCaller.sheetApiUrl,
-            _uniqueKey: `${loggedInCaller.id}_${l.rowIndex}`
-          }));
-          setLeads(tagged);
-        }
+        setLeads(combined.filter((l) => l._callerId === loggedInCaller.id));
       }
     } catch (err) {
       console.error("Sheet fetch error:", err);
@@ -614,14 +633,19 @@ export default function KhushaliCallerCRM() {
     }
   }, [loggedInCaller]);
 
-  // 🔄 TRIGGER MERGE DUPLICATES IN GOOGLE SHEETS & REFRESH
+  // 🔄 TRIGGER MERGE DUPLICATES IN BOTH GOOGLE SHEETS & SYNC BOTH LISTS
   const handleMergeDuplicatesNow = async () => {
     if (!loggedInCaller) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("⚠️ Internet disconnected hai. Kripya connection check karke dobara try karein.");
+      return;
+    }
     setMerging(true);
     try {
-      const urlsToMerge = loggedInCaller.role === "admin"
-        ? [CALLER_PROFILES.piyush.sheetApiUrl, CALLER_PROFILES.garv.sheetApiUrl].filter(Boolean)
-        : [loggedInCaller.sheetApiUrl].filter(Boolean);
+      const urlsToMerge = [
+        CALLER_PROFILES.piyush.sheetApiUrl,
+        CALLER_PROFILES.garv.sheetApiUrl
+      ].filter(Boolean);
 
       await Promise.all(
         urlsToMerge.map((url) =>
@@ -637,7 +661,7 @@ export default function KhushaliCallerCRM() {
       setTimeout(async () => {
         await fetchCallerSheet();
         setMerging(false);
-        alert("✅ Sabhi duplicate numbers merge ho gaye hain aur sheet clean ho gayi hai!");
+        alert("✅ Piyush aur Garv dono ki sheets me duplicate numbers merge ho gaye hain aur dono lists sync ho gayi hain!");
       }, 1500);
     } catch (err) {
       setMerging(false);
@@ -782,19 +806,20 @@ export default function KhushaliCallerCRM() {
       list.forEach((l) => {
         const status = l["Call_Status"] || "New";
         const isClosed = status === "Order Confirmed" || status === "Not Interested";
-        const lastCall = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
-        const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
-        const day1Date = l["Day_1_Date"] ? String(l["Day_1_Date"]).split("T")[0] : "";
-        const tsDate = l["Timestamp"] ? String(l["Timestamp"]).split("T")[0] : "";
+        const lastCall = normalizeSheetDate(l["Last_Call_Date"]);
+        const nextDate = normalizeSheetDate(l["Next_Call_Date"]);
+        const day1Date = normalizeSheetDate(l["Day_1_Date"]);
+        const tsDate = normalizeSheetDate(l["Timestamp"]);
         const callDates = getLeadCallDates(l);
+        const orderDate = getLeadOrderDate(l);
 
-                // Today's Calls & Orders (1 Unique Customer = 1 Call Today, chahe kitni bar bhi update karein)
+        // Today's Calls & Orders (1 Unique Customer = 1 Call Today; order revenue locked to orderDate)
         if (lastCall === todayDate) {
           callsCount += 1;
-          if (status === "Order Confirmed") {
-            ordersCount += 1;
-            revenue += parseFloat(l["Order_Amount"] || l["Amount"] || 0);
-          }
+        }
+        if (status === "Order Confirmed" && orderDate === todayDate) {
+          ordersCount += 1;
+          revenue += parseFloat(l["Order_Amount"] || l["Amount"] || 0);
         }
 
         if (!isClosed && status === "Planning to Visit Office") officeVisits += 1;
@@ -813,7 +838,6 @@ export default function KhushaliCallerCRM() {
           monthlyNewLeads += 1;
         }
 
-        const orderDate = lastCall || day1Date || tsDate;
         if (status === "Order Confirmed" && orderDate && orderDate.startsWith(selectedMonth)) {
           monthlyOrders += 1;
           monthlyRevenue += parseFloat(l["Order_Amount"] || l["Amount"] || 0);
@@ -870,12 +894,13 @@ export default function KhushaliCallerCRM() {
         if (caller === "garv") dailyMap[d].garvCalls += 1;
       });
 
-      if (status === "Order Confirmed" && lastCall && lastCall.startsWith(selectedMonth)) {
-        if (!dailyMap[lastCall]) {
-          dailyMap[lastCall] = { date: lastCall, piyushCalls: 0, garvCalls: 0, orders: 0, revenue: 0 };
+      const lockedOrderDate = getLeadOrderDate(l);
+      if (status === "Order Confirmed" && lockedOrderDate && lockedOrderDate.startsWith(selectedMonth)) {
+        if (!dailyMap[lockedOrderDate]) {
+          dailyMap[lockedOrderDate] = { date: lockedOrderDate, piyushCalls: 0, garvCalls: 0, orders: 0, revenue: 0 };
         }
-        dailyMap[lastCall].orders += 1;
-        dailyMap[lastCall].revenue += parseFloat(l["Order_Amount"] || l["Amount"] || 0);
+        dailyMap[lockedOrderDate].orders += 1;
+        dailyMap[lockedOrderDate].revenue += parseFloat(l["Order_Amount"] || l["Amount"] || 0);
       }
     });
 
@@ -902,8 +927,8 @@ export default function KhushaliCallerCRM() {
     baseList.forEach((l) => {
       const status = l["Call_Status"] || "New";
       const isClosed = status === "Order Confirmed" || status === "Not Interested";
-      const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
-      const lastCall = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
+      const nextDate = normalizeSheetDate(l["Next_Call_Date"]);
+      const lastCall = normalizeSheetDate(l["Last_Call_Date"]);
 
       if (lastCall === todayDate) {
         calledToday += 1;
@@ -1074,6 +1099,10 @@ export default function KhushaliCallerCRM() {
       alert("Kripya Custom Next Call Date select karein!");
       return;
     }
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("⚠️ Internet disconnected hai. Call update save karne ke liye internet connect karein.");
+      return;
+    }
 
     setSaving(true);
 
@@ -1221,7 +1250,13 @@ export default function KhushaliCallerCRM() {
     const cleanNumber = String(newLeadForm.number || "").trim();
     const normNewPhone = normalizePhone10(cleanNumber);
 
-    const existingLead = leads.find((l) => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("⚠️ Internet disconnected hai. Save karne ke liye internet connect karein.");
+      return;
+    }
+
+    const searchPool = allTeamLeads.length > 0 ? allTeamLeads : leads;
+    const existingLead = searchPool.find((l) => {
       const existingNorm = normalizePhone10(l["Number"] || l["Contact Number"]);
       return normNewPhone.length >= 8 && existingNorm === normNewPhone;
     });
@@ -1279,9 +1314,14 @@ export default function KhushaliCallerCRM() {
         body: JSON.stringify({ action: "add_lead", ...newEntry }),
       });
 
-      setLeads((prev) => [newEntry, ...prev]);
+      setAllTeamLeads((prev) => [newEntry, ...prev]);
+      if (loggedInCaller.role === "admin" || targetCallerObj.id === loggedInCaller.id) {
+        setLeads((prev) => [newEntry, ...prev]);
+      }
       setNewCustomerModalOpen(false);
       setNewLeadForm({ name: "", number: "", city: "", budget: "", chemicals: "", priority: "HOT", note: "", targetCaller: "piyush" });
+      // Sync real rowIndex from Google Sheet in background to prevent rowIndex mismatch
+      setTimeout(() => { fetchCallerSheet(); }, 1200);
     } catch (err) {
       alert("Naya customer add karne me dikkat aayi: " + err.message);
     } finally {
@@ -1312,8 +1352,13 @@ export default function KhushaliCallerCRM() {
     const cleanNumber = String(editLeadForm.number || "").trim();
     const normEditedPhone = normalizePhone10(cleanNumber);
 
-    // Check if edited phone collides with another existing lead
-    const duplicateOther = leads.find((l) => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      alert("⚠️ Internet disconnected hai. Update karne ke liye internet connect karein.");
+      return;
+    }
+    // Check if edited phone collides with another existing lead across BOTH callers
+    const editPool = allTeamLeads.length > 0 ? allTeamLeads : leads;
+    const duplicateOther = editPool.find((l) => {
       if (l._uniqueKey === editLeadForm._uniqueKey) return false;
       return normEditedPhone.length >= 8 && normalizePhone10(l["Number"] || l["Contact Number"]) === normEditedPhone;
     });
@@ -1398,8 +1443,8 @@ export default function KhushaliCallerCRM() {
 
       const status = l["Call_Status"] || "New";
       const isClosed = status === "Order Confirmed" || status === "Not Interested";
-      const nextDate = l["Next_Call_Date"] ? String(l["Next_Call_Date"]).split("T")[0] : "";
-      const lastCall = l["Last_Call_Date"] ? String(l["Last_Call_Date"]).split("T")[0] : "";
+      const nextDate = normalizeSheetDate(l["Next_Call_Date"]);
+      const lastCall = normalizeSheetDate(l["Last_Call_Date"]);
 
       let matchesTab = true;
       if (activeFilter === "today") {
