@@ -808,220 +808,283 @@ export default function KhushaliCallerCRM() {
     const nowObj = new Date();
     const dateStr = `${String(nowObj.getDate()).padStart(2, "0")}-${String(nowObj.getMonth() + 1).padStart(2, "0")}-${nowObj.getFullYear()}`;
     const totalQty = quoteSummary.rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
-    const autoIsRajasthan = /rajasthan|jaipur|chaksu|sikar|kota|jodhpur|udaipur|ajmer|alwar|bikaner|bhilwara|bharatpur|nagaur|jhunjhunu|tonk|pali|churu|barmer|jaisalmer|hanumangarh|ganganagar|bundi|baran|jhalawar|dausa|karauli|sawai|dholpur|chittorgarh|banswara|dungarpur|pratapgarh|sirohi|jalore|rajsamand|beawar|kishangarh|bhiwadi|neem ka thana|didwana|ratangarh|niwai|\brj\b|\b08\b/i.test(quoteCustomerCity || "");
+    const autoIsRajasthan = /rajasthan|jaipur|chaksu|sikar|kota|jodhpur|udaipur|ajmer|alwar|bikaner|bhilwara|bharatpur|nagaur|jhunjhunu|tonk|pali|churu|barmer|jaisalmer|hanumangarh|ganganagar|bundi|baran|jhalawar|dausa|karauli|sawai|dholpur|chittorgarh|banswara|dungarpur|pratapgarh|sirohi|jalore|rajsamand|beawar|kishangarh|bhiwadi|neem ka thana|didwana|ratangarh|niwai|rj|08/i.test(quoteCustomerCity || "");
     const isRajasthan = quoteTaxMode === "AUTO" ? autoIsRajasthan : quoteTaxMode === "INTRA_RJ";
+    const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const halfGst = quoteSummary.gstIncluded / 2;
+    const safeName = (quoteCustomerName || "Buyer").replace(/[^a-zA-Z0-9_-]/g, "_");
 
-    const rowsHtml = quoteSummary.rows.map((r, idx) => {
-      const flavLabel = r.flavour && !r.flavour.startsWith("Standard") ? ` (${r.flavour})` : "";
-      const baseUnitPrice = (r.price / 1.18).toFixed(2);
-      const rowTaxable = r.lineTotal / 1.18;
-      const rowGst = (r.lineTotal - rowTaxable).toFixed(2);
-      return `
-        <tr>
-          <td style="border:1px solid #334155;padding:6px;text-align:center;">${idx + 1}</td>
-          <td style="border:1px solid #334155;padding:6px;font-weight:600;">${r.productName}${flavLabel}</td>
-          <td style="border:1px solid #334155;padding:6px;text-align:right;">${r.qty}</td>
-          <td style="border:1px solid #334155;padding:6px;text-align:center;">${r.unit === "kg" ? "Kg" : "Pcs"}</td>
-          <td style="border:1px solid #334155;padding:6px;text-align:right;">₹ ${Number(baseUnitPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-          <td style="border:1px solid #334155;padding:6px;text-align:right;">₹ ${Number(rowGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })} (18.0%)</td>
-          <td style="border:1px solid #334155;padding:6px;text-align:right;font-weight:700;">₹ ${r.lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-        </tr>
-      `;
-    }).join("");
-
-    const halfGst = (quoteSummary.gstIncluded / 2).toFixed(2);
-    const taxRowsHtml = isRajasthan
-      ? `<tr>
-          <td style="border:1px solid #334155;padding:5px;text-align:right;">₹ ${quoteSummary.taxableBase.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:center;">—</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:right;">—</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:center;">9.0%</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:right;">₹ ${Number(halfGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:center;">9.0%</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:right;">₹ ${Number(halfGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:right;font-weight:700;">₹ ${quoteSummary.gstIncluded.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-        </tr>`
-      : `<tr>
-          <td style="border:1px solid #334155;padding:5px;text-align:right;">₹ ${quoteSummary.taxableBase.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:center;">18.0%</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:right;">₹ ${quoteSummary.gstIncluded.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:center;">—</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:right;">—</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:center;">—</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:right;">—</td>
-          <td style="border:1px solid #334155;padding:5px;text-align:right;font-weight:700;">₹ ${quoteSummary.gstIncluded.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-        </tr>`;
-
-    const pdfHtml = `
-      <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;background:#ffffff;padding:18px;font-size:11px;line-height:1.4;width:750px;box-sizing:border-box;">
-        <div style="text-align:center;font-size:16px;font-weight:700;margin-bottom:8px;">Quotation / Estimate</div>
-        <table style="width:100%;border-collapse:collapse;border:1px solid #334155;">
-          <tr>
-            <td colspan="4" style="border:1px solid #334155;padding:10px;width:58%;vertical-align:top;">
-              <div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:3px;">KHUSHALI CHEMICAL</div>
-              <div>Phone no.: 9216273399 / 8905878950</div>
-              <div>Email: Rohitsambhawani@gmail.com</div>
-              <div>GSTIN: 08PBDPS5444B1ZD</div>
-              <div>State: 08-Rajasthan</div>
-            </td>
-            <td colspan="2" style="border:1px solid #334155;padding:8px;width:21%;vertical-align:top;">
-              <div style="color:#475569;font-size:10px;">Quotation No.</div>
-              <div style="font-weight:700;font-size:12px;margin-top:2px;">${quoteNo}</div>
-            </td>
-            <td style="border:1px solid #334155;padding:8px;width:21%;vertical-align:top;">
-              <div style="color:#475569;font-size:10px;">Date</div>
-              <div style="font-weight:700;font-size:12px;margin-top:2px;">${dateStr}</div>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="7" style="border:1px solid #334155;padding:8px;">
-              <div style="color:#475569;font-size:10px;">Quote To</div>
-              <div style="font-weight:700;font-size:12px;margin-top:2px;">${quoteCustomerName || "Valued Buyer"}</div>
-              <div>City / State: ${quoteCustomerCity || "India"}</div>
-              ${quoteCustomerPhone ? `<div>Contact No.: ${quoteCustomerPhone}</div>` : ""}
-            </td>
-          </tr>
-        </table>
-
-        <table style="width:100%;border-collapse:collapse;margin-top:-1px;">
-          <thead>
-            <tr style="background:#f8fafc;">
-              <th style="border:1px solid #334155;padding:6px;width:5%;text-align:center;">#</th>
-              <th style="border:1px solid #334155;padding:6px;width:36%;text-align:left;">Item Name</th>
-              <th style="border:1px solid #334155;padding:6px;width:9%;text-align:right;">Quantity</th>
-              <th style="border:1px solid #334155;padding:6px;width:7%;text-align:center;">Unit</th>
-              <th style="border:1px solid #334155;padding:6px;width:13%;text-align:right;">Price/ Unit</th>
-              <th style="border:1px solid #334155;padding:6px;width:15%;text-align:right;">GST</th>
-              <th style="border:1px solid #334155;padding:6px;width:15%;text-align:right;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-            <tr style="background:#f8fafc;font-weight:700;">
-              <td colspan="2" style="border:1px solid #334155;padding:6px;">Total</td>
-              <td style="border:1px solid #334155;padding:6px;text-align:right;">${totalQty}</td>
-              <td style="border:1px solid #334155;padding:6px;"></td>
-              <td style="border:1px solid #334155;padding:6px;"></td>
-              <td style="border:1px solid #334155;padding:6px;text-align:right;">₹ ${quoteSummary.gstIncluded.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-              <td style="border:1px solid #334155;padding:6px;text-align:right;">₹ ${quoteSummary.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <table style="width:100%;border-collapse:collapse;margin-top:-1px;">
-          <tr>
-            <td style="border:1px solid #334155;padding:8px;width:50%;vertical-align:top;">
-              <div style="font-weight:700;font-size:10px;color:#475569;">Estimate Amount In Words</div>
-              <div style="font-weight:700;margin-top:3px;">${numberToIndianWords(quoteSummary.totalAmount)}</div>
-            </td>
-            <td style="border:1px solid #334155;padding:8px;width:50%;vertical-align:top;">
-              <div style="font-weight:700;font-size:10px;color:#475569;margin-bottom:4px;">Amounts</div>
-              <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
-                <span>Taxable Sub Total</span>
-                <span>₹ ${quoteSummary.taxableBase.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              </div>
-              ${isRajasthan ? `
-                <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
-                  <span>CGST (9%)</span>
-                  <span>₹ ${Number(halfGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
-                  <span>SGST (9%)</span>
-                  <span>₹ ${Number(halfGst).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                </div>
-              ` : `
-                <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
-                  <span>IGST (18%)</span>
-                  <span>₹ ${quoteSummary.gstIncluded.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                </div>
-              `}
-              <div style="display:flex;justify-content:space-between;font-weight:800;font-size:12px;border-top:1px solid #cbd5e1;padding-top:4px;margin-top:4px;">
-                <span>Total</span>
-                <span>₹ ${quoteSummary.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-              </div>
-            </td>
-          </tr>
-        </table>
-
-        <table style="width:100%;border-collapse:collapse;margin-top:-1px;font-size:10px;">
-          <thead>
-            <tr style="background:#f8fafc;">
-              <th rowspan="2" style="border:1px solid #334155;padding:5px;text-align:right;">Taxable Amount</th>
-              <th colspan="2" style="border:1px solid #334155;padding:4px;text-align:center;">IGST</th>
-              <th colspan="2" style="border:1px solid #334155;padding:4px;text-align:center;">CGST</th>
-              <th colspan="2" style="border:1px solid #334155;padding:4px;text-align:center;">SGST</th>
-              <th rowspan="2" style="border:1px solid #334155;padding:5px;text-align:right;">Total Tax Amount</th>
-            </tr>
-            <tr style="background:#f8fafc;">
-              <th style="border:1px solid #334155;padding:4px;text-align:center;">Rate</th>
-              <th style="border:1px solid #334155;padding:4px;text-align:right;">Amount</th>
-              <th style="border:1px solid #334155;padding:4px;text-align:center;">Rate</th>
-              <th style="border:1px solid #334155;padding:4px;text-align:right;">Amount</th>
-              <th style="border:1px solid #334155;padding:4px;text-align:center;">Rate</th>
-              <th style="border:1px solid #334155;padding:4px;text-align:right;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${taxRowsHtml}
-          </tbody>
-        </table>
-
-        <table style="width:100%;border-collapse:collapse;margin-top:-1px;">
-          <tr>
-            <td style="border:1px solid #334155;padding:8px;width:36%;vertical-align:top;">
-              <div style="font-weight:700;margin-bottom:4px;">Bank Details</div>
-              <div>Name: M/S KHUSHALI CHEMICAL</div>
-              <div>Bank Name: IDFC FIRST</div>
-              <div>Branch: JAIPUR - JOHARI BAZAR BRANCH</div>
-              <div>Account No.: 79610970195</div>
-              <div>IFSC: IDFB0043415</div>
-              <div>SWIFT Code: IDFBINBBMUM</div>
-            </td>
-            <td style="border:1px solid #334155;padding:8px;width:34%;vertical-align:top;">
-              <div style="font-weight:700;margin-bottom:4px;">Terms and conditions</div>
-              <div>Thank you for doing business with us.</div>
-              <div style="margin-top:4px;color:#475569;font-size:10px;">All rates are inclusive of 18% GST.</div>
-            </td>
-            <td style="border:1px solid #334155;padding:8px;width:30%;vertical-align:bottom;text-align:center;">
-              <div style="font-weight:700;margin-bottom:28px;">For: KHUSHALI CHEMICAL</div>
-              <div style="font-weight:700;border-top:1px solid #94a3b8;padding-top:4px;">Authorized Signatory</div>
-            </td>
-          </tr>
-        </table>
-      </div>
-    `;
+    const loadScript = (src) =>
+      new Promise((resolve, reject) => {
+        if (document.querySelector(`script[src="${src}"]`)) return resolve();
+        const s = document.createElement("script");
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
 
     try {
-      if (!window.html2pdf) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement("script");
-          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      }
-      const wrapper = document.createElement("div");
-      wrapper.innerHTML = pdfHtml;
-      const safeName = (quoteCustomerName || "Buyer").replace(/[^a-zA-Z0-9_-]/g, "_");
-      await window.html2pdf()
-        .set({
-          margin: 6,
-          filename: `Quotation_${safeName}_${dateStr}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-        })
-        .from(wrapper.firstElementChild)
-        .save();
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 10;
+      const contentW = pageW - margin * 2;
+      let y = 12;
+
+      // Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Quotation / Estimate", pageW / 2, y, { align: "center" });
+      y += 4;
+
+      // Header & Quote To Box
+      doc.autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        theme: "grid",
+        styles: { font: "helvetica", fontSize: 8.5, textColor: [15, 23, 42], lineColor: [51, 65, 85], lineWidth: 0.25, cellPadding: 2.5 },
+        body: [
+          [
+            {
+              content: "KHUSHALI CHEMICAL
+Phone no.: 9216273399 / 8905878950
+Email: Rohitsambhawani@gmail.com
+GSTIN: 08PBDPS5444B1ZD
+State: 08-Rajasthan",
+              rowSpan: 2,
+              styles: { fontStyle: "bold", valign: "top", cellWidth: contentW * 0.58 }
+            },
+            {
+              content: `Quotation No.
+${quoteNo}`,
+              styles: { valign: "top", cellWidth: contentW * 0.21 }
+            },
+            {
+              content: `Date
+${dateStr}`,
+              styles: { valign: "top", cellWidth: contentW * 0.21 }
+            }
+          ],
+          [
+            {
+              content: `GST Mode
+${isRajasthan ? "Rajasthan (CGST+SGST)" : "Out of RJ (IGST 18%)"}`,
+              colSpan: 2,
+              styles: { valign: "top" }
+            }
+          ],
+          [
+            {
+              content: `Quote To:
+${quoteCustomerName || "Valued Buyer"}
+City / State: ${quoteCustomerCity || "India"}${quoteCustomerPhone ? `
+Contact No.: ${quoteCustomerPhone}` : ""}`,
+              colSpan: 3,
+              styles: { fontStyle: "bold" }
+            }
+          ]
+        ]
+      });
+
+      y = doc.lastAutoTable.finalY;
+
+      // Items Table
+      const itemBody = quoteSummary.rows.map((r, idx) => {
+        const flavLabel = r.flavour && !r.flavour.startsWith("Standard") ? ` (${r.flavour})` : "";
+        const baseUnitPrice = r.price / 1.18;
+        const rowTaxable = r.lineTotal / 1.18;
+        const rowGst = r.lineTotal - rowTaxable;
+        return [
+          String(idx + 1),
+          `${r.productName}${flavLabel}`,
+          String(r.qty),
+          r.unit === "kg" ? "Kg" : "Pcs",
+          `Rs. ${fmt(baseUnitPrice)}`,
+          `Rs. ${fmt(rowGst)} (18%)`,
+          `Rs. ${fmt(r.lineTotal)}`
+        ];
+      });
+
+      itemBody.push([
+        { content: "Total", colSpan: 2, styles: { fontStyle: "bold" } },
+        { content: String(totalQty), styles: { fontStyle: "bold", halign: "right" } },
+        "",
+        "",
+        { content: `Rs. ${fmt(quoteSummary.gstIncluded)}`, styles: { fontStyle: "bold", halign: "right" } },
+        { content: `Rs. ${fmt(quoteSummary.totalAmount)}`, styles: { fontStyle: "bold", halign: "right" } }
+      ]);
+
+      doc.autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        theme: "grid",
+        headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: "bold", fontSize: 8, lineColor: [51, 65, 85], lineWidth: 0.25 },
+        styles: { font: "helvetica", fontSize: 8, textColor: [15, 23, 42], lineColor: [51, 65, 85], lineWidth: 0.25, cellPadding: 2 },
+        columnStyles: {
+          0: { halign: "center", cellWidth: 9 },
+          1: { halign: "left", cellWidth: contentW - 103 },
+          2: { halign: "right", cellWidth: 14 },
+          3: { halign: "center", cellWidth: 12 },
+          4: { halign: "right", cellWidth: 22 },
+          5: { halign: "right", cellWidth: 24 },
+          6: { halign: "right", cellWidth: 22 }
+        },
+        head: [["#", "Item Name", "Qty", "Unit", "Price/Unit", "GST (18%)", "Amount"]],
+        body: itemBody
+      });
+
+      y = doc.lastAutoTable.finalY;
+
+      // Words & Amounts Summary
+      const taxBreakdownText = isRajasthan
+        ? `Taxable Sub Total: Rs. ${fmt(quoteSummary.taxableBase)}
+CGST (9%): Rs. ${fmt(halfGst)}
+SGST (9%): Rs. ${fmt(halfGst)}
+Total Payable: Rs. ${fmt(quoteSummary.totalAmount)}`
+        : `Taxable Sub Total: Rs. ${fmt(quoteSummary.taxableBase)}
+IGST (18%): Rs. ${fmt(quoteSummary.gstIncluded)}
+Total Payable: Rs. ${fmt(quoteSummary.totalAmount)}`;
+
+      doc.autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        theme: "grid",
+        styles: { font: "helvetica", fontSize: 8.5, textColor: [15, 23, 42], lineColor: [51, 65, 85], lineWidth: 0.25, cellPadding: 2.5 },
+        body: [
+          [
+            {
+              content: `Estimate Amount In Words:
+${numberToIndianWords(quoteSummary.totalAmount)}`,
+              styles: { cellWidth: contentW * 0.52, fontStyle: "bold", valign: "top" }
+            },
+            {
+              content: taxBreakdownText,
+              styles: { cellWidth: contentW * 0.48, halign: "right", fontStyle: "bold", valign: "top" }
+            }
+          ]
+        ]
+      });
+
+      y = doc.lastAutoTable.finalY;
+
+      // GST Summary Table
+      const gstRow = isRajasthan
+        ? [`Rs. ${fmt(quoteSummary.taxableBase)}`, "-", "-", "9.0%", `Rs. ${fmt(halfGst)}`, "9.0%", `Rs. ${fmt(halfGst)}`, `Rs. ${fmt(quoteSummary.gstIncluded)}`]
+        : [`Rs. ${fmt(quoteSummary.taxableBase)}`, "18.0%", `Rs. ${fmt(quoteSummary.gstIncluded)}`, "-", "-", "-", "-", `Rs. ${fmt(quoteSummary.gstIncluded)}`];
+
+      doc.autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        theme: "grid",
+        headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: "bold", fontSize: 7.5, halign: "center", lineColor: [51, 65, 85], lineWidth: 0.25 },
+        styles: { font: "helvetica", fontSize: 7.5, textColor: [15, 23, 42], lineColor: [51, 65, 85], lineWidth: 0.25, cellPadding: 1.8, halign: "right" },
+        head: [["Taxable Amt", "IGST %", "IGST Amt", "CGST %", "CGST Amt", "SGST %", "SGST Amt", "Total Tax"]],
+        body: [gstRow]
+      });
+
+      y = doc.lastAutoTable.finalY;
+
+      // Bank Details, Terms & Signatory
+      doc.autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        theme: "grid",
+        styles: { font: "helvetica", fontSize: 8, textColor: [15, 23, 42], lineColor: [51, 65, 85], lineWidth: 0.25, cellPadding: 2.5 },
+        body: [
+          [
+            {
+              content: "Bank Details:
+Name: M/S KHUSHALI CHEMICAL
+Bank Name: IDFC FIRST
+Branch: JAIPUR - JOHARI BAZAR BRANCH
+Account No.: 79610970195
+IFSC: IDFB0043415
+SWIFT Code: IDFBINBBMUM",
+              styles: { cellWidth: contentW * 0.42, valign: "top" }
+            },
+            {
+              content: "Terms and conditions:
+Thank you for doing business with us.
+All rates are inclusive of 18% GST.",
+              styles: { cellWidth: contentW * 0.32, valign: "top" }
+            },
+            {
+              content: "For: KHUSHALI CHEMICAL
+
+
+Authorized Signatory",
+              styles: { cellWidth: contentW * 0.26, halign: "center", valign: "bottom", fontStyle: "bold" }
+            }
+          ]
+        ]
+      });
+
+      doc.save(`Quotation_${safeName}_${dateStr}.pdf`);
     } catch (err) {
-      const printWin = window.open("", "_blank");
-      if (printWin) {
-        printWin.document.write(`<html><head><title>Quotation - ${quoteCustomerName}</title></head><body style="margin:0;padding:12px;">${pdfHtml}<script>window.onload=function(){window.print();}</script></body></html>`);
-        printWin.document.close();
-      } else {
-        alert("Popup blocked! Kripya browser me popup allow karein.");
-      }
+      // Fallback: Clean hidden iframe Print-to-PDF (no popup blocker, no oklch crash)
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      document.body.appendChild(iframe);
+
+      const fallbackHtml = `
+        <html><head><title>Quotation_${safeName}_${dateStr}</title>
+        <style>
+          @page { size: A4; margin: 10mm; }
+          body { font-family: Arial, sans-serif; color: #0f172a; font-size: 11px; margin: 0; }
+          table { width: 100%; border-collapse: collapse; margin-top: -1px; }
+          th, td { border: 1px solid #334155; padding: 5px; }
+          th { background: #f1f5f9; }
+        </style></head><body>
+        <h3 style="text-align:center;margin:0 0 8px 0;">Quotation / Estimate</h3>
+        <table>
+          <tr>
+            <td style="width:58%;"><b>KHUSHALI CHEMICAL</b><br/>Phone: 9216273399 / 8905878950<br/>Email: Rohitsambhawani@gmail.com<br/>GSTIN: 08PBDPS5444B1ZD | State: 08-Rajasthan</td>
+            <td style="width:21%;">Quotation No.<br/><b>${quoteNo}</b></td>
+            <td style="width:21%;">Date<br/><b>${dateStr}</b></td>
+          </tr>
+          <tr><td colspan="3"><b>Quote To:</b> ${quoteCustomerName || "Valued Buyer"} (${quoteCustomerCity || "India"})${quoteCustomerPhone ? ` • ${quoteCustomerPhone}` : ""}</td></tr>
+        </table>
+        <table>
+          <thead><tr><th>#</th><th>Item Name</th><th>Qty</th><th>Unit</th><th>Price/Unit</th><th>GST (18%)</th><th>Amount</th></tr></thead>
+          <tbody>
+            ${quoteSummary.rows.map((r, i) => `<tr><td style="text-align:center;">${i+1}</td><td>${r.productName}${r.flavour && !r.flavour.startsWith("Standard") ? ` (${r.flavour})` : ""}</td><td style="text-align:right;">${r.qty}</td><td style="text-align:center;">${r.unit}</td><td style="text-align:right;">₹ ${fmt(r.price/1.18)}</td><td style="text-align:right;">₹ ${fmt(r.lineTotal - r.lineTotal/1.18)}</td><td style="text-align:right;"><b>₹ ${fmt(r.lineTotal)}</b></td></tr>`).join("")}
+            <tr><td colspan="2"><b>Total</b></td><td style="text-align:right;"><b>${totalQty}</b></td><td></td><td></td><td style="text-align:right;"><b>₹ ${fmt(quoteSummary.gstIncluded)}</b></td><td style="text-align:right;"><b>₹ ${fmt(quoteSummary.totalAmount)}</b></td></tr>
+          </tbody>
+        </table>
+        <table>
+          <tr>
+            <td style="width:50%;"><b>In Words:</b> ${numberToIndianWords(quoteSummary.totalAmount)}</td>
+            <td style="width:50%;text-align:right;">Taxable: ₹ ${fmt(quoteSummary.taxableBase)}<br/>${isRajasthan ? `CGST (9%): ₹ ${fmt(halfGst)}<br/>SGST (9%): ₹ ${fmt(halfGst)}` : `IGST (18%): ₹ ${fmt(quoteSummary.gstIncluded)}`}<br/><b>Total: ₹ ${fmt(quoteSummary.totalAmount)}</b></td>
+          </tr>
+        </table>
+        <table>
+          <tr>
+            <td style="width:42%;"><b>Bank Details:</b><br/>Name: M/S KHUSHALI CHEMICAL<br/>Bank: IDFC FIRST (Jaipur - Johari Bazar)<br/>A/c: 79610970195 | IFSC: IDFB0043415<br/>SWIFT: IDFBINBBMUM</td>
+            <td style="width:32%;"><b>Terms:</b><br/>Thank you for doing business with us.</td>
+            <td style="width:26%;text-align:center;vertical-align:bottom;"><b>For: KHUSHALI CHEMICAL</b><br/><br/>Authorized Signatory</td>
+          </tr>
+        </table>
+        </body></html>`;
+
+      const docWin = iframe.contentWindow;
+      docWin.document.open();
+      docWin.document.write(fallbackHtml);
+      docWin.document.close();
+      setTimeout(() => {
+        docWin.focus();
+        docWin.print();
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+      }, 250);
     } finally {
       setDownloadingPdf(false);
     }
