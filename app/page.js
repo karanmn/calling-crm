@@ -515,7 +515,7 @@ export default function KhushaliCallerCRM() {
   // Extract locked Order Date from [ORDER: ₹...] note so later follow-ups don't shift revenue date
   const getLeadOrderDate = (lead) => {
     const allNotes = FOLLOWUP_FLOW.map((f) => String(lead[f.noteCol] || "")).join(" | ");
-    const m = allNotes.match(/\[(\d{4}-\d{2}-\d{2})(?:\s+\d{2}:\d{2})?\]\s*\[ORDER:/);
+    const m = allNotes.match(/\[(\d{4}-\d{2}-\d{2})[^\]]*\]\s*(?:\[[^\]]+\]\s*)?\[ORDER:/);
     if (m && m[1]) return m[1];
     return normalizeSheetDate(lead["Last_Call_Date"]) || normalizeSheetDate(lead["Day_1_Date"]) || normalizeSheetDate(lead["Timestamp"]);
   };
@@ -1497,6 +1497,16 @@ Authorized Signatory",
       }
 
       const targetSheetUrl = activeLeadModal._sheetUrl || loggedInCaller.sheetApiUrl;
+      if (!targetSheetUrl) {
+        alert(`⚠️ ${activeLeadModal._callerName || loggedInCaller.name} ki Google Sheet API URL missing hai! Env variable check karein.`);
+        setSaving(false);
+        return;
+      }
+      if (!activeLeadModal.rowIndex || isNaN(Number(activeLeadModal.rowIndex))) {
+        alert("⚠️ Is lead ka rowIndex missing hai! Kripya upar Sync button dabakar dobara try karein.");
+        setSaving(false);
+        return;
+      }
 
       const payload = {
         action: "update_call",
@@ -1538,6 +1548,13 @@ Authorized Signatory",
       );
 
       setLeads(updatedLeads);
+      setAllTeamLeads((prev) =>
+        prev.map((item) =>
+          item._uniqueKey === currentUniqueKey
+            ? updatedLeads.find((u) => u._uniqueKey === currentUniqueKey) || item
+            : item
+        )
+      );
       setActiveLeadModal(null);
       setCustomDateTimeEnabled(false);
       setCustomDateInput("");
