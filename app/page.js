@@ -59,17 +59,19 @@ const CALLER_PROFILES = {
   }
 };
 
-// 📚 OFFICIAL KHUSHALI CHEMICALS CATALOG & FORMULATION DATA
+// 📚 OFFICIAL KHUSHALI CHEMICALS CATALOG & FORMULATION DATA (12 Unified SKUs + Flavours)
 const PRODUCT_CATALOG = [
   {
     name: "White Phenyl Raw Material",
+    flavours: ["Standard"],
     rates: { tier5: 255, tier25: 250, tier50: 245 },
     slabs: "5Kg: ₹255/kg | 25Kg: ₹250/kg | 50Kg: ₹245/kg",
     ratio: "1:30 (1 Kg Concentrate + 30 Kg Water)",
     instructions: "TDS 150-250 वाला पानी धीरे-धीरे डालें और अच्छी तरह मिलाएँ।"
   },
   {
-    name: "Colour Phenyl (Rose)",
+    name: "Colour Phenyl Raw Material",
+    flavours: ["Rose", "Lemon", "Mogra", "Lavender", "Citronella", "Lemongrass", "Sandal", "Neem"],
     rates: { tier5: 265, tier25: 260, tier50: 255 },
     slabs: "5Kg: ₹265/kg | 25Kg: ₹260/kg | 50Kg: ₹255/kg",
     ratio: "1:30 (1 Kg Concentrate + 30 Kg Water)",
@@ -77,6 +79,7 @@ const PRODUCT_CATALOG = [
   },
   {
     name: "Black Phenyl Raw Material",
+    flavours: ["Standard"],
     rates: { tier5: 175, tier25: 170, tier50: 165 },
     slabs: "5Kg: ₹175/kg | 25Kg: ₹170/kg | 50Kg: ₹165/kg",
     ratio: "1:6 से 1:9 (1 Kg Concentrate + 6-9 Kg Water)",
@@ -84,13 +87,15 @@ const PRODUCT_CATALOG = [
   },
   {
     name: "Toilet Cleaner Raw Material",
+    flavours: ["Standard Blue"],
     rates: { tier5: 125, tier25: 120, tier50: 115 },
-    slabs: "5Kg: ₹125/kg | 15Kg: ₹120/kg | 50Kg: ₹115/kg",
+    slabs: "5Kg: ₹125/kg | 25Kg: ₹120/kg | 50Kg: ₹115/kg",
     ratio: "1:7 (1 Kg Concentrate + 7 Kg Water)",
     instructions: "RO पानी (< 70 TDS) का उपयोग करें और अच्छी तरह मिक्स करें।"
   },
   {
-    name: "Bathroom Cleaner Raw Material",
+    name: "Bathroom Cleaner Raw Material (R1)",
+    flavours: ["Standard Red"],
     rates: { tier5: 145, tier25: 140, tier50: 135 },
     slabs: "5Kg: ₹145/kg | 25Kg: ₹140/kg | 50Kg: ₹135/kg",
     ratio: "1:4 से 1:8 (1 Kg Concentrate + 4-8 Kg Water)",
@@ -98,13 +103,15 @@ const PRODUCT_CATALOG = [
   },
   {
     name: "Floor Cleaner Raw Material",
+    flavours: ["Lemon", "Rose", "Lavender", "Jasmine", "Mogra", "Orange", "Green Apple", "Rajnigandha", "Bela"],
     rates: { tier5: 820, tier25: 810, tier50: 800 },
     slabs: "5Kg: ₹820/kg | 25Kg: ₹810/kg | 50Kg: ₹800/kg",
     ratio: "1:40 से 1:60 (1 Kg Concentrate + 40-60 Kg Water)",
     instructions: "कम लागत में हाई-क्वालिटी फ्लोर क्लीनर।"
   },
   {
-    name: "Hand Wash (Rose) Raw Material",
+    name: "Hand Wash Raw Material",
+    flavours: ["Rose", "Lavender", "Dettol", "Lemon", "Green Apple", "Lifebuoy", "Tulsi", "Neem", "Jasmine", "Strawberry", "Sandal"],
     rates: { tier5: 350, tier25: 345, tier50: 340 },
     slabs: "5Kg: ₹350/kg | 25Kg: ₹345/kg | 50Kg: ₹340/kg",
     ratio: "1:9 (1 Kg Concentrate + 8.5 Kg Water + 500g Salt)",
@@ -112,6 +119,7 @@ const PRODUCT_CATALOG = [
   },
   {
     name: "Dishwash Raw Material",
+    flavours: ["Lemon"],
     rates: { tier5: 350, tier25: 345, tier50: 340 },
     slabs: "5Kg: ₹350/kg | 25Kg: ₹345/kg | 50Kg: ₹340/kg",
     ratio: "1:9 (1 Kg Concentrate + 8.5 Kg Water + 500g Salt)",
@@ -119,6 +127,7 @@ const PRODUCT_CATALOG = [
   },
   {
     name: "Fabric Wash Raw Material",
+    flavours: ["Standard"],
     rates: { tier5: 350, tier25: 345, tier50: 340 },
     slabs: "5Kg: ₹350/kg | 25Kg: ₹345/kg | 50Kg: ₹340/kg",
     ratio: "1:9 (1 Kg Concentrate + 8.5 Kg Water + 500g Salt)",
@@ -126,6 +135,7 @@ const PRODUCT_CATALOG = [
   },
   {
     name: "Glass Cleaner Raw Material",
+    flavours: ["Standard Blue"],
     rates: { tier5: 160, tier25: 155, tier50: 150 },
     slabs: "5Kg: ₹160/kg | 25Kg: ₹155/kg | 50Kg: ₹150/kg",
     ratio: "1:80 से 1:100 (1 Kg Concentrate + 80-100 Kg Water)",
@@ -133,13 +143,15 @@ const PRODUCT_CATALOG = [
   },
   {
     name: "Car Wash Raw Material",
+    flavours: ["Standard"],
     rates: { tier5: 350, tier25: 345, tier50: 340 },
     slabs: "5Kg: ₹350/kg | 25Kg: ₹345/kg | 50Kg: ₹340/kg",
     ratio: "1:9 (1 Kg Concentrate + 8.5 Kg Water + 500g Salt)",
     instructions: "पहले पानी में 500g नमक मिलाएँ, फिर कंसन्ट्रेट मिक्स करें।"
   },
   {
-    name: "Room Freshener (Rose, Jasmine, Mogra)",
+    name: "Room Freshener Raw Material",
+    flavours: ["Lavender", "Seven Wonder", "London Love", "Rose", "Mogra", "Chandan", "Jasmine", "Aroglobal", "Punch"],
     rates: { tier5: 1220, tier25: 1210, tier50: 1210 },
     slabs: "5Kg: ₹1220/kg | 10Kg: ₹1210/kg",
     ratio: "1:20 (1 Kg Concentrate + 15 Kg Water)",
@@ -364,8 +376,8 @@ export default function KhushaliCallerCRM() {
   const [quoteCustomerPhone, setQuoteCustomerPhone] = useState("");
   const [quoteCustomerCity, setQuoteCustomerCity] = useState("Jaipur, Rajasthan");
   const [quoteItems, setQuoteItems] = useState([
-    { id: 1, itemType: "CHEMICAL", productName: PRODUCT_CATALOG[3].name, tier: "tier25", qty: 25, unit: "kg", customPrice: 120 },
-    { id: 2, itemType: "CHEMICAL", productName: PRODUCT_CATALOG[0].name, tier: "tier25", qty: 25, unit: "kg", customPrice: 250 }
+    { id: 1, itemType: "CHEMICAL", productName: PRODUCT_CATALOG[3].name, flavour: PRODUCT_CATALOG[3].flavours[0], tier: "tier25", qty: 25, unit: "kg", customPrice: 120 },
+    { id: 2, itemType: "CHEMICAL", productName: PRODUCT_CATALOG[0].name, flavour: PRODUCT_CATALOG[0].flavours[0], tier: "tier25", qty: 25, unit: "kg", customPrice: 250 }
   ]);
   
   // Call Update Inputs
@@ -652,13 +664,13 @@ export default function KhushaliCallerCRM() {
       const b = BOTTLE_CATALOG[0];
       setQuoteItems(prev => [
         ...prev,
-        { id: Date.now() + Math.random(), itemType: "BOTTLE", productName: b.name, tier: "pcs", qty: b.moq, unit: "pcs", customPrice: b.rate }
+        { id: Date.now() + Math.random(), itemType: "BOTTLE", productName: b.name, flavour: "", tier: "pcs", qty: b.moq, unit: "pcs", customPrice: b.rate }
       ]);
     } else {
       const p = PRODUCT_CATALOG[0];
       setQuoteItems(prev => [
         ...prev,
-        { id: Date.now() + Math.random(), itemType: "CHEMICAL", productName: p.name, tier: "tier25", qty: 25, unit: "kg", customPrice: p.rates.tier25 }
+        { id: Date.now() + Math.random(), itemType: "CHEMICAL", productName: p.name, flavour: p.flavours[0] || "Standard", tier: "tier25", qty: 25, unit: "kg", customPrice: p.rates.tier25 }
       ]);
     }
   };
@@ -673,10 +685,12 @@ export default function KhushaliCallerCRM() {
           const foundB = BOTTLE_CATALOG.find(b => b.name === patch.productName) || BOTTLE_CATALOG[0];
           updated.customPrice = foundB.rate;
           updated.unit = "pcs";
+          updated.flavour = "";
         } else {
           const foundP = PRODUCT_CATALOG.find(p => p.name === patch.productName) || PRODUCT_CATALOG[0];
           updated.customPrice = foundP.rates[updated.tier] || foundP.rates.tier25;
           updated.unit = "kg";
+          updated.flavour = (foundP.flavours && foundP.flavours[0]) || "Standard";
         }
       }
 
@@ -720,7 +734,8 @@ export default function KhushaliCallerCRM() {
     ];
 
     quoteSummary.rows.forEach((r, idx) => {
-      lines.push(`${idx + 1}. *${r.productName}*`);
+      const flavLabel = r.flavour && !r.flavour.startsWith("Standard") ? ` (${r.flavour})` : "";
+      lines.push(`${idx + 1}. *${r.productName}${flavLabel}*`);
       lines.push(`   📦 Qty: ${r.qty} ${r.unit} @ Rs.${r.price}/${r.unit}`);
       lines.push(`   👉 *Total: Rs.${r.lineTotal.toLocaleString("en-IN")}*`);
     });
@@ -2235,17 +2250,33 @@ export default function KhushaliCallerCRM() {
             <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
               {quoteSummary.rows.map((row) => (
                 <div key={row.id} className="bg-slate-950 border border-slate-800 rounded-2xl p-3 grid grid-cols-1 sm:grid-cols-12 gap-2 items-center text-xs">
-                  <div className="sm:col-span-5">
-                    <label className="block text-[9px] text-slate-500 mb-0.5">Select Item</label>
-                    <select
-                      value={row.productName}
-                      onChange={(e) => updateQuoteRow(row.id, { productName: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-white text-xs"
-                    >
-                      {row.itemType === "BOTTLE"
-                        ? BOTTLE_CATALOG.map(b => <option key={b.name} value={b.name}>{b.name} (₹{b.rate})</option>)
-                        : PRODUCT_CATALOG.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
-                    </select>
+                  <div className="sm:col-span-5 space-y-1.5">
+                    <div>
+                      <label className="block text-[9px] text-slate-500 mb-0.5">Select Item</label>
+                      <select
+                        value={row.productName}
+                        onChange={(e) => updateQuoteRow(row.id, { productName: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-white text-xs"
+                      >
+                        {row.itemType === "BOTTLE"
+                          ? BOTTLE_CATALOG.map(b => <option key={b.name} value={b.name}>{b.name} (₹{b.rate})</option>)
+                          : PRODUCT_CATALOG.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+                      </select>
+                    </div>
+                    {row.itemType === "CHEMICAL" && (() => {
+                      const prodDef = PRODUCT_CATALOG.find(p => p.name === row.productName);
+                      const flavs = prodDef?.flavours || [];
+                      if (flavs.length <= 1) return null;
+                      return (
+                        <select
+                          value={row.flavour || flavs[0]}
+                          onChange={(e) => updateQuoteRow(row.id, { flavour: e.target.value })}
+                          className="w-full bg-slate-900 border border-cyan-700/60 rounded-lg px-2.5 py-1.5 text-cyan-300 text-[11px] font-semibold"
+                        >
+                          {flavs.map(f => <option key={f} value={f}>Flavour: {f}</option>)}
+                        </select>
+                      );
+                    })()}
                   </div>
 
                   {row.itemType === "CHEMICAL" ? (
@@ -2257,7 +2288,7 @@ export default function KhushaliCallerCRM() {
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-cyan-300 text-xs font-mono"
                       >
                         <option value="tier5">5kg Rate</option>
-                        <option value="tier25">25kg Rate</option>
+                        <option value="tier25">{row.productName.includes("Room Freshener") ? "10kg Rate" : "25kg Rate"}</option>
                         <option value="tier50">50kg Rate</option>
                       </select>
                     </div>
