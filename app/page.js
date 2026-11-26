@@ -854,11 +854,7 @@ export default function KhushaliCallerCRM() {
         body: [
           [
             {
-              content: "KHUSHALI CHEMICAL
-Phone no.: 9216273399 / 8905878950
-Email: Rohitsambhawani@gmail.com
-GSTIN: 08PBDPS5444B1ZD
-State: 08-Rajasthan",
+              content: "KHUSHALI CHEMICAL\nPhone no.: 9216273399 / 8905878950\nEmail: Rohitsambhawani@gmail.com\nGSTIN: 08PBDPS5444B1ZD\nState: 08-Rajasthan",
               rowSpan: 2,
               styles: { fontStyle: "bold", valign: "top", cellWidth: contentW * 0.58 }
             },
@@ -1001,26 +997,15 @@ ${numberToIndianWords(quoteSummary.totalAmount)}`,
         body: [
           [
             {
-              content: "Bank Details:
-Name: M/S KHUSHALI CHEMICAL
-Bank Name: IDFC FIRST
-Branch: JAIPUR - JOHARI BAZAR BRANCH
-Account No.: 79610970195
-IFSC: IDFB0043415
-SWIFT Code: IDFBINBBMUM\nUPI ID: khushalichemical@idfcbank",
+              content: "Bank Details:\nName: M/S KHUSHALI CHEMICAL\nBank Name: IDFC FIRST\nBranch: JAIPUR - JOHARI BAZAR BRANCH\nAccount No.: 79610970195\nIFSC: IDFB0043415\nSWIFT Code: IDFBINBBMUM\nUPI ID: khushalichemical@idfcbank",
               styles: { cellWidth: contentW * 0.42, valign: "top" }
             },
             {
-              content: "Terms and conditions:
-Thank you for doing business with us.
-All rates are inclusive of 18% GST.",
+              content: "Terms and conditions:\nThank you for doing business with us.\nAll rates are inclusive of 18% GST.",
               styles: { cellWidth: contentW * 0.32, valign: "top" }
             },
             {
-              content: "For: KHUSHALI CHEMICAL
-
-
-Authorized Signatory",
+              content: "For: KHUSHALI CHEMICAL\n\n\nAuthorized Signatory",
               styles: { cellWidth: contentW * 0.26, halign: "center", valign: "bottom", fontStyle: "bold" }
             }
           ]
