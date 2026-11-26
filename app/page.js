@@ -341,7 +341,7 @@ const buildWhatsAppTemplate = (type, lead, callerName) => {
       const ratioShort = (p.ratio || "").split(" ")[0];
       return `🔹 *${p.name} (${ratioShort}):* ${p.slabs}`;
     }).join("\n");
-    return `नमस्ते ${name} जी! 🙏\n*KHUSHALI CHEMICALS (Jaipur)*\n*(All Rates Per Kg - Including 18% GST)*\n\n${catalogLines}\n\n📋 *GST:* 08PBDPS5444B1ZD\n🌐 *Web:* khushalichemicals.com\n\nबताइए सर, इसमें से कौन-कौन से आइटम का कोटेशन या सैंपल पैक फाइनल करें?`;
+    return `नमस्ते ${name} जी! 🙏\n*KHUSHALI CHEMICALS (Jaipur)*\n*(All Rates Per Kg - Including 18% GST)*\n\n${catalogLines}\n\n📋 *GST:* 08PBDPS5444B1ZD\n🌐 *Web:* khushalichemical.com\n\nबताइए सर, इसमें से कौन-कौन से आइटम का कोटेशन या सैंपल पैक फाइनल करें?`;
   }
 
   if (type === "office_visit") {
@@ -751,7 +751,7 @@ export default function KhushaliCallerCRM() {
     const lines = [
       "*KHUSHALI CHEMICALS - QUOTATION*",
       "📍 Jaipur, Rajasthan | 📞 +91 8905878950",
-      "GST: 08PBDPS5444B1ZD | Web: khushalichemicals.com",
+      "GST: 08PBDPS5444B1ZD | Web: khushalichemical.com",
       "------------------------------------------",
       `*Client:* ${quoteCustomerName || "Valued Buyer"} (${quoteCustomerCity || "India"})`,
       `*Date:* ${new Date().toLocaleDateString("en-IN")}`,
@@ -815,7 +815,7 @@ export default function KhushaliCallerCRM() {
     const safeName = (quoteCustomerName || "Buyer").replace(/[^a-zA-Z0-9_-]/g, "_");
     const upiId = "khushalichemical@idfcbank";
     const upiAmount = Number(quoteSummary.totalAmount || 0).toFixed(2);
-    const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent("M/S KHUSHALI CHEMICAL")}&am=${upiAmount}&cu=INR&tn=${encodeURIComponent("Quotation " + quoteNo)}`;
+    const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent("M/S KHUSHALI CHEMICAL")}&am=${upiAmount}&cu=INR&tn=${encodeURIComponent("Quotation" + quoteNo)}`;
 
     const loadScript = (src) =>
       new Promise((resolve, reject) => {
