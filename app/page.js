@@ -830,6 +830,15 @@ export default function KhushaliCallerCRM() {
     try {
       await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
       await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+      let qrDataUrl = "";
+      try {
+        await loadScript("https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js");
+        if (window.QRCode && window.QRCode.toDataURL) {
+          qrDataUrl = await window.QRCode.toDataURL(upiUrl, { width: 240, margin: 1 });
+        }
+      } catch (qrErr) {
+        console.warn("QR generation skipped:", qrErr);
+      }
 
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -1012,20 +1021,28 @@ ${numberToIndianWords(quoteSummary.totalAmount)}`,
         ]
       });
 
-      y = doc.lastAutoTable.finalY + 5;
-      const btnH = 11;
-      doc.setFillColor(16, 185, 129);
-      doc.roundedRect(margin, y, contentW, btnH, 2, 2, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.text(`CLICK HERE TO PAY RS. ${fmt(quoteSummary.totalAmount)} VIA UPI (${upiId})`, pageW / 2, y + 7, { align: "center" });
-      doc.link(margin, y, contentW, btnH, { url: upiUrl });
+      y = doc.lastAutoTable.finalY + 4;
+      if (qrDataUrl) {
+        const qrBoxH = 32;
+        doc.setDrawColor(51, 65, 85);
+        doc.setLineWidth(0.25);
+        doc.rect(margin, y, contentW, qrBoxH);
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(37, 99, 235);
-      doc.textWithLink(`Direct UPI Link: ${upiUrl}`, margin, y + 16, { url: upiUrl });
+        doc.addImage(qrDataUrl, "PNG", margin + 3, y + 2, 28, 28);
+        doc.link(margin + 3, y + 2, 28, 28, { url: upiUrl });
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(15, 23, 42);
+        doc.text(`Scan & Pay Rs. ${fmt(quoteSummary.totalAmount)} via UPI`, margin + 35, y + 9);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(51, 65, 85);
+        doc.text(`UPI ID: ${upiId}`, margin + 35, y + 15);
+        doc.text(`Payee: M/S KHUSHALI CHEMICAL (IDFC FIRST)`, margin + 35, y + 20);
+        doc.text(`Supported Apps: GPay, PhonePe, Paytm, BHIM & all UPI apps`, margin + 35, y + 25);
+      }
 
       doc.save(`Quotation_${safeName}_${dateStr}.pdf`);
     } catch (err) {
