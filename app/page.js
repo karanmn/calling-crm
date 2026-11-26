@@ -813,6 +813,9 @@ export default function KhushaliCallerCRM() {
     const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const halfGst = quoteSummary.gstIncluded / 2;
     const safeName = (quoteCustomerName || "Buyer").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const upiId = "khushalichemical@idfcbank";
+    const upiAmount = Number(quoteSummary.totalAmount || 0).toFixed(2);
+    const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent("M/S KHUSHALI CHEMICAL")}&am=${upiAmount}&cu=INR&tn=${encodeURIComponent("Quotation " + quoteNo)}`;
 
     const loadScript = (src) =>
       new Promise((resolve, reject) => {
@@ -1004,7 +1007,7 @@ Bank Name: IDFC FIRST
 Branch: JAIPUR - JOHARI BAZAR BRANCH
 Account No.: 79610970195
 IFSC: IDFB0043415
-SWIFT Code: IDFBINBBMUM",
+SWIFT Code: IDFBINBBMUM\nUPI ID: khushalichemical@idfcbank",
               styles: { cellWidth: contentW * 0.42, valign: "top" }
             },
             {
@@ -1023,6 +1026,21 @@ Authorized Signatory",
           ]
         ]
       });
+
+      y = doc.lastAutoTable.finalY + 5;
+      const btnH = 11;
+      doc.setFillColor(16, 185, 129);
+      doc.roundedRect(margin, y, contentW, btnH, 2, 2, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`CLICK HERE TO PAY RS. ${fmt(quoteSummary.totalAmount)} VIA UPI (${upiId})`, pageW / 2, y + 7, { align: "center" });
+      doc.link(margin, y, contentW, btnH, { url: upiUrl });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(37, 99, 235);
+      doc.textWithLink(`Direct UPI Link: ${upiUrl}`, margin, y + 16, { url: upiUrl });
 
       doc.save(`Quotation_${safeName}_${dateStr}.pdf`);
     } catch (err) {
@@ -1069,7 +1087,7 @@ Authorized Signatory",
         </table>
         <table>
           <tr>
-            <td style="width:42%;"><b>Bank Details:</b><br/>Name: M/S KHUSHALI CHEMICAL<br/>Bank: IDFC FIRST (Jaipur - Johari Bazar)<br/>A/c: 79610970195 | IFSC: IDFB0043415<br/>SWIFT: IDFBINBBMUM</td>
+            <td style="width:42%;"><b>Bank Details:</b><br/>Name: M/S KHUSHALI CHEMICAL<br/>Bank: IDFC FIRST (Jaipur - Johari Bazar)<br/>A/c: 79610970195 | IFSC: IDFB0043415<br/>SWIFT: IDFBINBBMUM<br/>UPI: <b>khushalichemical@idfcbank</b><br/><a href="${upiUrl}" style="display:inline-block;margin-top:5px;padding:5px 10px;background:#10b981;color:#fff;text-decoration:none;font-weight:700;border-radius:4px;">Pay ₹ ${fmt(quoteSummary.totalAmount)} via UPI</a></td>
             <td style="width:32%;"><b>Terms:</b><br/>Thank you for doing business with us.</td>
             <td style="width:26%;text-align:center;vertical-align:bottom;"><b>For: KHUSHALI CHEMICAL</b><br/><br/>Authorized Signatory</td>
           </tr>
