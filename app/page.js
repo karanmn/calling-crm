@@ -1041,7 +1041,7 @@ export default function KhushaliCallerCRM() {
     setModalHelperTab(existingRemarks.length > 0 ? "history" : "objections");
   };
 
-        const handleSaveFollowUp = async () => {
+     const handleSaveFollowUp = async () => {
     if (!activeLeadModal || !loggedInCaller) return;
 
     if (callStatusInput === "Order Confirmed") {
@@ -1073,23 +1073,25 @@ export default function KhushaliCallerCRM() {
 
       // 1. Highest Priority: Custom Date & Time Checkbox
       if (customDateTimeEnabled && customDateInput) {
-        nextDateVal = customDateInput;
+        nextDateVal = String(customDateInput).trim();
         nextTimeVal = customTimeInput ? String(customTimeInput).trim() : "";
         if (callStatusInput === "Same Day Follow-up" || stepInfo.isSameDayRepeat) {
           nextStageVal = currentStage;
         }
       } else if (callStatusInput === "Planning to Visit Office") {
         nextStageVal = currentStage;
-        nextDateVal = visitDateInput || todayDate;
+        nextDateVal = visitDateInput ? String(visitDateInput).trim() : todayDate;
         nextTimeVal = visitTimeInput ? String(visitTimeInput).trim() : "";
       } else if (callStatusInput === "Busy / Call Tomorrow" || callStatusInput === "Ringing / Not Picked") {
         nextStageVal = currentStage;
-        const tmw = new Date(todayDate + "T00:00:00");
-        tmw.setDate(tmw.getDate() + 1);
-        nextDateVal = tmw.toISOString().split("T")[0];
+        const [y, m, d] = todayDate.split("-").map(Number);
+        const tomorrowObj = new Date(Date.UTC(y, m - 1, d + 1));
+        nextDateVal = tomorrowObj.toISOString().split("T")[0];
+        nextTimeVal = "";
       } else if (callStatusInput === "Order Confirmed" || callStatusInput === "Not Interested") {
         nextStageVal = "CLOSED";
         nextDateVal = "CLOSED";
+        nextTimeVal = "";
       } else if (callStatusInput === "Same Day Follow-up" || stepInfo.isSameDayRepeat) {
         nextStageVal = currentStage;
       }
